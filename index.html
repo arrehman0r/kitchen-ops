@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Homemade Kitchen Co. — Kitchen Ops (Prototype)</title>
+<!--
+  ============================================================================
+  CLICKABLE PROTOTYPE · Kitchen Operations System  ·  built by Quantum Force
+  ----------------------------------------------------------------------------
+  This is an INTERACTIVE mockup for the client meeting (not the real app).
+  Everything runs in-memory in the browser — works fully offline, zero install.
+
+  THE DEMO STORY (walk the client through this):
+    1. A Foodpanda order arrives  → click "Simulate Foodpanda order"
+       → recipe auto-deducts ingredients (rice/chicken/masala drop live)
+    2. Fire a few more → a LOW-STOCK ALERT appears
+    3. Ring up a WALK-IN order in the POS → generate an INVOICE
+    4. Log an EXPENSE (or restock an ingredient)
+    5. Dashboard shows PROFIT SPLIT BY CHANNEL
+       (walk-in full margin vs Foodpanda AFTER ~30% commission)
+
+  REBRAND: find & replace "Homemade Kitchen Co." · colours in :root below.
+  ============================================================================
+-->
+<style>
+  :root{
+    --bg:#15100E;
+    --bg2:#1E1614;
+    --panel:#241B18;
+    --panel2:#2C211D;
+    --line:rgba(255,244,232,.09);
+    --line2:rgba(255,244,232,.16);
+    --txt:#FBF1E6;
+    --muted:rgba(251,241,230,.62);
+    --muted2:rgba(251,241,230,.40);
+    --accent:#FF7A1A;
+    --accent-soft:#FF9D4D;
+    --accent2:#E63946;
+    --gold:#F4B860;
+    --green:#34D399;
+    --red:#FB7185;
+    --radius:14px;
+    --font:'Segoe UI',system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{font-family:var(--font);background:var(--bg);color:var(--txt);overflow:hidden;-webkit-font-smoothing:antialiased}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:rgba(255,244,232,.14);border-radius:8px}
+  ::-webkit-scrollbar-track{background:transparent}
+
+  /* ---------- app shell ---------- */
+  .app{display:grid;grid-template-columns:236px 1fr;height:100vh}
+
+  .sidebar{background:linear-gradient(180deg,#1C1411,#160F0D);border-right:1px solid var(--line);padding:18px 14px;display:flex;flex-direction:column;gap:4px}
+  .brand{display:flex;align-items:center;gap:11px;padding:6px 8px 18px}
+  .brand .logo{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;font-size:20px;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 8px 22px rgba(255,122,26,.35)}
+  .brand b{font-size:15px;line-height:1.1}
+  .brand small{display:block;color:var(--muted2);font-size:11px;margin-top:2px}
+  .nav-i{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:11px;color:var(--muted);font-size:14px;font-weight:600;cursor:pointer;border:1px solid transparent;transition:.15s;position:relative}
+  .nav-i .e{font-size:17px;width:20px;text-align:center}
+  .nav-i:hover{background:var(--panel);color:var(--txt)}
+  .nav-i.on{background:linear-gradient(100deg,rgba(255,122,26,.18),rgba(230,57,70,.10));color:var(--txt);border-color:rgba(255,122,26,.28)}
+  .nav-i.on::before{content:"";position:absolute;left:-14px;top:9px;bottom:9px;width:3px;border-radius:3px;background:var(--accent)}
+  .nav-tag{margin-left:auto;font-size:10px;font-weight:800;padding:2px 7px;border-radius:999px;background:var(--accent2);color:#fff}
+  .side-foot{margin-top:auto;padding:10px 8px;color:var(--muted2);font-size:11px;line-height:1.5;border-top:1px solid var(--line)}
+
+  .main{display:flex;flex-direction:column;overflow:hidden}
+  .topbar{display:flex;align-items:center;gap:14px;padding:15px 26px;border-bottom:1px solid var(--line);background:var(--bg2)}
+  .topbar h1{font-size:19px;font-weight:800;letter-spacing:-.01em}
+  .topbar .sub{color:var(--muted);font-size:12.5px;margin-top:1px}
+  .topbar .spacer{flex:1}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border-radius:11px;border:1px solid var(--line2);background:var(--panel);color:var(--txt);font-weight:700;font-size:13.5px;cursor:pointer;transition:.15s;font-family:inherit}
+  .btn:hover{border-color:var(--accent);background:var(--panel2)}
+  .btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));border-color:transparent;color:#fff;box-shadow:0 8px 22px rgba(255,122,26,.30)}
+  .btn.primary:hover{filter:brightness(1.07)}
+  .btn.ghost{background:transparent}
+  .btn.sm{padding:7px 12px;font-size:12.5px;border-radius:9px}
+  .btn.live{position:relative}
+  .btn.live::after{content:"";position:absolute;top:-3px;right:-3px;width:9px;height:9px;border-radius:50%;background:var(--green);box-shadow:0 0 0 0 rgba(52,211,153,.6);animation:pulse 1.8s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(52,211,153,.6)}70%{box-shadow:0 0 0 9px rgba(52,211,153,0)}100%{box-shadow:0 0 0 0 rgba(52,211,153,0)}}
+
+  .content{flex:1;overflow:auto;padding:24px 26px 60px}
+
+  /* ---------- generic ---------- */
+  .grid{display:grid;gap:16px}
+  .g4{grid-template-columns:repeat(4,1fr)}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  .g2{grid-template-columns:repeat(2,1fr)}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px}
+  .card h3{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+  .row{display:flex;align-items:center;gap:12px}
+  .between{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .muted{color:var(--muted)}.small{font-size:12.5px}
+  .sec-title{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted2);font-weight:800;margin:26px 0 12px}
+
+  /* kpi */
+  .kpi .t{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:700}
+  .kpi .v{font-size:28px;font-weight:800;margin-top:8px;letter-spacing:-.02em}
+  .kpi .d{font-size:12px;margin-top:7px;font-weight:700}
+  .kpi .ic{float:right;width:38px;height:38px;border-radius:10px;display:grid;place-items:center;font-size:19px;background:linear-gradient(135deg,rgba(255,122,26,.2),rgba(230,57,70,.14));border:1px solid rgba(255,122,26,.25)}
+  .up{color:var(--green)}.down{color:var(--red)}
+
+  /* badges */
+  .badge{font-size:11px;font-weight:800;padding:4px 10px;border-radius:999px;white-space:nowrap}
+  .b-fp{background:rgba(230,57,70,.16);color:#ff8e98}
+  .b-wi{background:rgba(52,211,153,.15);color:#5ee9b5}
+  .b-low{background:rgba(244,184,96,.16);color:var(--gold)}
+  .b-ok{background:rgba(52,211,153,.13);color:#5ee9b5}
+  .b-out{background:rgba(230,57,70,.18);color:#ff8e98}
+
+  /* table */
+  table{width:100%;border-collapse:collapse}
+  th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted2);font-weight:700;padding:10px 12px;border-bottom:1px solid var(--line)}
+  td{padding:11px 12px;border-bottom:1px solid var(--line);font-size:13.5px;vertical-align:middle}
+  tr:last-child td{border-bottom:none}
+  tbody tr:hover{background:rgba(255,244,232,.025)}
+  .t-right{text-align:right}
+
+  /* stock bar */
+  .stockbar{height:8px;border-radius:6px;background:rgba(255,244,232,.08);overflow:hidden;margin-top:7px}
+  .stockbar i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,var(--accent),var(--gold));transition:width .8s cubic-bezier(.2,.8,.2,1)}
+  .stockbar i.low{background:linear-gradient(90deg,var(--accent2),var(--gold))}
+
+  /* filters */
+  .filters{display:flex;gap:8px;margin-bottom:16px}
+  .chip{font-size:13px;padding:8px 15px;border-radius:999px;border:1px solid var(--line2);background:var(--panel);color:var(--muted);cursor:pointer;font-weight:700;transition:.15s}
+  .chip:hover{color:var(--txt)}
+  .chip.on{background:var(--accent);border-color:var(--accent);color:#1a0f06}
+
+  /* POS */
+  .pos{display:grid;grid-template-columns:1fr 340px;gap:18px;height:100%}
+  .dishgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:13px;align-content:start}
+  .dish{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:15px;cursor:pointer;transition:.15s;text-align:left}
+  .dish:hover{border-color:var(--accent);transform:translateY(-3px);background:var(--panel2)}
+  .dish .e{font-size:30px}
+  .dish b{display:block;margin-top:9px;font-size:14px}
+  .dish .pr{color:var(--accent-soft);font-weight:800;font-size:14px;margin-top:5px}
+  .dish .mg{font-size:11px;color:var(--muted2);margin-top:3px}
+  .cartbox{background:var(--panel);border:1px solid var(--line);border-radius:14px;display:flex;flex-direction:column;overflow:hidden}
+  .cartbox .hd{padding:15px 16px;border-bottom:1px solid var(--line);font-weight:800;display:flex;align-items:center;gap:9px}
+  .cartlist{flex:1;overflow:auto;padding:8px 12px;min-height:120px}
+  .citem{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+  .citem:last-child{border-bottom:none}
+  .citem .nm{flex:1;font-size:13px}.citem .nm small{display:block;color:var(--muted2);font-size:11px}
+  .qtybtn{width:24px;height:24px;border-radius:7px;border:1px solid var(--line2);background:var(--panel2);color:var(--txt);cursor:pointer;font-weight:800;font-size:14px;line-height:1}
+  .qtybtn:hover{border-color:var(--accent)}
+  .cart-empty{color:var(--muted2);text-align:center;padding:34px 10px;font-size:13px}
+  .carttot{padding:14px 16px;border-top:1px solid var(--line);background:var(--bg2)}
+
+  /* expense form */
+  .field{margin-bottom:13px}
+  .field label{display:block;font-size:12px;color:var(--muted);font-weight:700;margin-bottom:6px}
+  .inp{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line2);background:var(--bg2);color:var(--txt);font-size:14px;font-family:inherit}
+  .inp:focus{outline:none;border-color:var(--accent)}
+  select.inp{cursor:pointer}
+
+  /* toast */
+  #toasts{position:fixed;right:22px;bottom:22px;z-index:90;display:flex;flex-direction:column;gap:10px;max-width:360px}
+  .toast{background:var(--panel2);border:1px solid var(--line2);border-left:4px solid var(--accent);border-radius:12px;padding:13px 15px;box-shadow:0 16px 40px rgba(0,0,0,.5);animation:slidein .4s both}
+  .toast.green{border-left-color:var(--green)}
+  .toast.red{border-left-color:var(--accent2)}
+  .toast.gold{border-left-color:var(--gold)}
+  .toast b{font-size:13.5px;display:block;margin-bottom:3px}
+  .toast p{font-size:12.5px;color:var(--muted);line-height:1.45}
+  @keyframes slidein{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:none}}
+  @keyframes flashrow{0%{background:rgba(255,122,26,.22)}100%{background:transparent}}
+  .flash{animation:flashrow 1.4s ease}
+
+  /* modal */
+  #modal{position:fixed;inset:0;z-index:100;background:rgba(8,5,4,.7);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;padding:24px}
+  #modal.show{display:flex}
+  .sheet{background:var(--panel);border:1px solid var(--line2);border-radius:18px;width:100%;max-width:430px;box-shadow:0 30px 80px rgba(0,0,0,.6);animation:pop .3s both;overflow:hidden}
+  @keyframes pop{from{opacity:0;transform:scale(.95) translateY(10px)}to{opacity:1;transform:none}}
+  .sheet .sh-hd{padding:18px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+  .sheet .sh-bd{padding:20px}
+  .sheet .x{cursor:pointer;color:var(--muted);font-size:20px;line-height:1;background:none;border:none}
+
+  /* invoice */
+  .inv{font-size:13px}
+  .inv .ihd{text-align:center;padding-bottom:14px;border-bottom:2px dashed var(--line2);margin-bottom:14px}
+  .inv .ihd .lg{font-size:26px}
+  .inv .ihd b{display:block;font-size:16px;margin-top:4px}
+  .inv .ihd small{color:var(--muted)}
+  .inv table td{padding:6px 0;border:none;font-size:13px}
+  .inv .tot{border-top:2px dashed var(--line2);margin-top:10px;padding-top:10px}
+  .inv .tot .big{font-size:20px;font-weight:800}
+  .inv .thanks{text-align:center;color:var(--muted);margin-top:14px;font-size:12px}
+
+  .empty{color:var(--muted2);text-align:center;padding:40px;font-size:13.5px}
+
+  @media print{
+    body *{visibility:hidden}
+    #invoicePrint,#invoicePrint *{visibility:visible}
+    #invoicePrint{position:fixed;inset:0;background:#fff;color:#000;padding:30px}
+    #invoicePrint .ihd{border-color:#000}#invoicePrint .tot{border-color:#000}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">🍽️</div>
+      <div><b id="brandName">Homemade Kitchen Co.</b><small>Kitchen Ops · v0 prototype</small></div>
+    </div>
+    <div class="nav-i on" data-view="dashboard"><span class="e">📊</span> Dashboard</div>
+    <div class="nav-i" data-view="orders"><span class="e">🧾</span> Orders <span class="nav-tag" id="navOrders" style="display:none">0</span></div>
+    <div class="nav-i" data-view="pos"><span class="e">🛒</span> Walk-in POS</div>
+    <div class="nav-i" data-view="inventory"><span class="e">📦</span> Inventory <span class="nav-tag" id="navLow" style="display:none">0</span></div>
+    <div class="nav-i" data-view="recipes"><span class="e">📖</span> Recipes</div>
+    <div class="nav-i" data-view="expenses"><span class="e">💸</span> Expenses</div>
+    <div class="side-foot">
+      <b style="color:var(--muted)">Quantum Force</b><br>
+      Prototype for client review.<br>Data is simulated &amp; in-memory.
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <h1 id="pageTitle">Dashboard</h1>
+        <div class="sub" id="pageSub">Today's overview across all channels</div>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn ghost" onclick="openSettings()" title="Settings">⚙️ Settings</button>
+      <button class="btn live" onclick="simulateFoodpanda()">🛵 Simulate Foodpanda order</button>
+      <button class="btn primary" onclick="go('pos')">＋ New walk-in sale</button>
+    </div>
+    <div class="content" id="content"></div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+<div id="modal"><div class="sheet" id="sheet"></div></div>
+
+<script>
+/* ==========================================================================
+   DATA  (base units: g, ml, pc)
+   ========================================================================== */
+const UNIT = { g:'g', ml:'ml', pc:'pc' };
+
+const ingredients = [
+  { id:'rice',    name:'Basmati Rice', emoji:'🍚', unit:'g',  stock:60000, reorder:12000, cost:0.22 },
+  { id:'chicken', name:'Chicken',      emoji:'🍗', unit:'g',  stock:12500, reorder:10000, cost:0.72 },
+  { id:'beef',    name:'Beef',         emoji:'🥩', unit:'g',  stock:15000, reorder:5000,  cost:1.05 },
+  { id:'masala',  name:'Masala Mix',   emoji:'🧂', unit:'g',  stock:1750,  reorder:1500,  cost:1.20 },
+  { id:'oil',     name:'Cooking Oil',  emoji:'🫒', unit:'ml', stock:18000, reorder:5000,  cost:0.50 },
+  { id:'yogurt',  name:'Yogurt',       emoji:'🥛', unit:'g',  stock:6000,  reorder:2000,  cost:0.28 },
+  { id:'flour',   name:'Flour',        emoji:'🌾', unit:'g',  stock:20000, reorder:5000,  cost:0.10 },
+  { id:'egg',     name:'Eggs',         emoji:'🥚', unit:'pc', stock:120,   reorder:36,    cost:22   },
+];
+const ing = id => ingredients.find(x=>x.id===id);
+
+// menu items + recipe (BOM) + foodpanda product code
+const menu = [
+  { id:'biryani', name:'Chicken Biryani', emoji:'🍛', price:450, fp:'FP-BIR-01',
+    recipe:[['rice',220],['chicken',130],['masala',14],['oil',25],['yogurt',35]] },
+  { id:'karahi',  name:'Chicken Karahi',  emoji:'🍗', price:950, fp:'FP-KAR-02',
+    recipe:[['chicken',500],['oil',60],['masala',25],['yogurt',30]] },
+  { id:'pulao',   name:'Beef Pulao',      emoji:'🍲', price:520, fp:'FP-PUL-03',
+    recipe:[['rice',230],['beef',210],['oil',35],['masala',18]] },
+  { id:'roll',    name:'Chicken Roll',    emoji:'🌯', price:220, fp:'FP-ROL-04',
+    recipe:[['chicken',120],['flour',80],['oil',20],['egg',1]] },
+  { id:'burger',  name:'Zinger Burger',   emoji:'🍔', price:380, fp:'FP-BUR-05',
+    recipe:[['chicken',150],['flour',60],['oil',40],['egg',1]] },
+];
+const dish = id => menu.find(x=>x.id===id);
+
+const settings = { fpCommission:30, businessName:'Homemade Kitchen Co.' }; // Foodpanda commission % + brand
+
+/* ---- money accounts & categories (editable, like a personal-finance app) ---- */
+const accounts = [
+  { id:'cash',   name:'Cash Drawer',  icon:'💵', opening:15000 },
+  { id:'bank',   name:'Bank Account', icon:'🏦', opening:120000 },
+  { id:'wallet', name:'JazzCash',     icon:'📱', opening:8000 },
+];
+const categories = [
+  { id:'c_ingredients', name:'Ingredients',  icon:'🛒', kind:'expense' },
+  { id:'c_gas',         name:'Gas',          icon:'🔥', kind:'expense' },
+  { id:'c_salary',      name:'Salaries',     icon:'👤', kind:'expense' },
+  { id:'c_utilities',   name:'Utilities',    icon:'💡', kind:'expense' },
+  { id:'c_rent',        name:'Rent',         icon:'🏠', kind:'expense' },
+  { id:'c_packaging',   name:'Packaging',    icon:'📦', kind:'expense' },
+  { id:'c_misc',        name:'Misc',         icon:'🧾', kind:'expense' },
+  { id:'i_sales',       name:'Cash Sales',   icon:'🛒', kind:'income' },
+  { id:'i_other',       name:'Other Income', icon:'➕', kind:'income' },
+];
+const account  = id => accounts.find(a=>a.id===id);
+const category = id => categories.find(c=>c.id===id);
+function addTxn(t){ state.txns.unshift({ id:'T'+(state.seq++), time:Date.now(), ...t }); }
+function accountBalance(id){
+  let b = account(id).opening||0;
+  state.txns.forEach(t=>{
+    if(t.kind==='income'  && t.accountId===id) b+=t.amount;
+    if(t.kind==='expense' && t.accountId===id) b-=t.amount;
+    if(t.kind==='transfer'){ if(t.accountId===id) b-=t.amount; if(t.toAccountId===id) b+=t.amount; }
+  });
+  return b;
+}
+function totalBalance(){ return accounts.reduce((s,a)=>s+accountBalance(a.id),0); }
+
+/* ==========================================================================
+   STATE
+   ========================================================================== */
+let state = {
+  view:'dashboard',
+  orders:[],          // {id, channel:'foodpanda'|'walkin', items:[{id,qty}], gross, commission, net, time, payment}
+  txns:[],            // {id, kind:'expense'|'income'|'transfer', accountId, toAccountId, categoryId, amount, note, time}
+  cart:[],            // [{id, qty}]
+  orderFilter:'all',
+  seq:1000,
+};
+
+/* ---- seed a little history so the dashboard isn't empty ---- */
+function seed(){
+  const t = Date.now();
+  pushOrder('foodpanda',[['biryani',4],['roll',2]], t-1000*60*180, null, false);
+  pushOrder('walkin',[['karahi',1],['biryani',1]], t-1000*60*120, 'Cash', false);
+  pushOrder('foodpanda',[['burger',3]], t-1000*60*60, null, false);
+  pushOrder('walkin',[['biryani',2],['pulao',1]], t-1000*60*30, 'Card', false);
+  addTxn({kind:'expense',accountId:'cash',categoryId:'c_gas',amount:1800,note:'Cylinder refill',time:t-1000*60*200});
+  addTxn({kind:'expense',accountId:'bank',categoryId:'c_salary',amount:25000,note:'Helper — weekly',time:t-1000*60*240});
+  addTxn({kind:'expense',accountId:'cash',categoryId:'c_ingredients',amount:14500,note:'Chicken & rice from supplier',time:t-1000*60*150});
+  addTxn({kind:'income',accountId:'cash',categoryId:'i_sales',amount:42000,note:'Counter cash sales',time:t-1000*60*90});
+  addTxn({kind:'transfer',accountId:'cash',toAccountId:'bank',amount:30000,note:'Daily cash deposit',time:t-1000*60*45});
+}
+
+/* ==========================================================================
+   CORE LOGIC
+   ========================================================================== */
+const recipeCost = m => m.recipe.reduce((s,[iid,q])=>s + q*ing(iid).cost, 0);
+const orderItemsCost = items => items.reduce((s,it)=>s + recipeCost(dish(it.id))*it.qty, 0);
+
+// deduct ingredients for a set of order items; returns list of {iid, qty} consumed
+function consume(items){
+  const used = {};
+  items.forEach(it=>{
+    dish(it.id).recipe.forEach(([iid,q])=>{ used[iid]=(used[iid]||0)+q*it.qty; });
+  });
+  Object.entries(used).forEach(([iid,q])=>{ ing(iid).stock = Math.max(0, ing(iid).stock - q); });
+  return Object.entries(used).map(([iid,q])=>({iid,q}));
+}
+
+function pushOrder(channel, itemPairs, time, payment, doConsume=true){
+  const items = itemPairs.map(([id,qty])=>({id,qty}));
+  const gross = items.reduce((s,it)=>s + dish(it.id).price*it.qty, 0);
+  const commission = channel==='foodpanda' ? Math.round(gross*settings.fpCommission/100) : 0;
+  const net = gross - commission;
+  const o = { id:'#'+(state.seq++), channel, items, gross, commission, net, time:time||Date.now(), payment };
+  state.orders.unshift(o);
+  if(doConsume) o.consumed = consume(items);
+  return o;
+}
+
+/* ---- actions ---- */
+const FP_PRESETS = [
+  [['biryani',10]],
+  [['karahi',3],['biryani',2]],
+  [['biryani',5],['roll',4]],
+  [['burger',6],['roll',3]],
+  [['pulao',4],['biryani',3]],
+];
+let fpIdx = 0;
+function simulateFoodpanda(){
+  const preset = FP_PRESETS[fpIdx % FP_PRESETS.length]; fpIdx++;
+  const before = ingredients.map(i=>({id:i.id,stock:i.stock}));
+  const o = pushOrder('foodpanda', preset, Date.now(), null, true);
+  // build deduction summary
+  const ded = o.consumed.map(c=>`−${fmtQty(c.q, ing(c.iid).unit)} ${ing(c.iid).name.toLowerCase()}`).slice(0,4).join(' · ');
+  const itemsTxt = o.items.map(it=>`${it.qty}× ${dish(it.id).name}`).join(', ');
+  toast('🛵 New Foodpanda order '+o.id, `${itemsTxt}<br><span class="muted">Auto-deducted: ${ded}</span>`, 'red');
+  checkLowStock(before);
+  render();
+}
+
+function checkLowStock(before){
+  ingredients.forEach(i=>{
+    const was = before?before.find(b=>b.id===i.id).stock:Infinity;
+    if(i.stock<=i.reorder && was>i.reorder){
+      toast('⚠️ Low stock: '+i.name, `Only ${fmtQty(i.stock,i.unit)} left (reorder at ${fmtQty(i.reorder,i.unit)}). Time to restock.`, 'gold');
+    }
+  });
+}
+
+function addToCart(id){ const c=state.cart.find(x=>x.id===id); if(c)c.qty++; else state.cart.push({id,qty:1}); render(); }
+function cartQty(id,d){ const c=state.cart.find(x=>x.id===id); if(!c)return; c.qty+=d; if(c.qty<=0)state.cart=state.cart.filter(x=>x.id!==id); render(); }
+function cartTotal(){ return state.cart.reduce((s,it)=>s+dish(it.id).price*it.qty,0); }
+
+function checkout(method){
+  if(!state.cart.length) return;
+  const before = ingredients.map(i=>({id:i.id,stock:i.stock}));
+  const o = pushOrder('walkin', state.cart.map(c=>[c.id,c.qty]), Date.now(), method, true);
+  state.cart = [];
+  closeModal();
+  showInvoice(o);
+  checkLowStock(before);
+  render();
+}
+
+/* manual expenses/income are handled by the finance module — see openTxnForm() */
+
+function restock(iid){
+  const i = ing(iid);
+  const addQty = i.unit==='pc' ? 60 : 20000; // +60 pcs or +20kg/L
+  i.stock += addQty;
+  const cost = Math.round(addQty*i.cost);
+  addTxn({kind:'expense',accountId:'cash',categoryId:'c_ingredients',amount:cost,note:`Restock ${i.name} (+${fmtQty(addQty,i.unit)})`});
+  toast('📦 Restocked '+i.name, `Added ${fmtQty(addQty,i.unit)} · logged ${fmtPKR(cost)} expense`, 'green');
+  render();
+}
+
+/* ==========================================================================
+   FORMAT HELPERS
+   ========================================================================== */
+function fmtPKR(n){ return 'Rs '+Math.round(n).toLocaleString('en-PK'); }
+function fmtQty(q,unit){
+  if(unit==='pc') return q+' pc';
+  if(q>=1000) return (q/1000).toLocaleString('en-PK',{maximumFractionDigits:2})+(unit==='ml'?' L':' kg');
+  return Math.round(q)+' '+unit;
+}
+function timeAgo(t){
+  const m=Math.round((Date.now()-t)/60000);
+  if(m<1)return'just now'; if(m<60)return m+'m ago';
+  const h=Math.round(m/60); return h+'h ago';
+}
+
+/* ==========================================================================
+   AGGREGATES (today)
+   ========================================================================== */
+function totals(){
+  const o=state.orders;
+  const fp=o.filter(x=>x.channel==='foodpanda'), wi=o.filter(x=>x.channel==='walkin');
+  const sum=(a,k)=>a.reduce((s,x)=>s+x[k],0);
+  const fpGross=sum(fp,'gross'), fpComm=sum(fp,'commission'), fpNet=sum(fp,'net');
+  const wiGross=sum(wi,'gross');
+  const fpCost=fp.reduce((s,x)=>s+orderItemsCost(x.items),0);
+  const wiCost=wi.reduce((s,x)=>s+orderItemsCost(x.items),0);
+  const exp=state.txns.filter(t=>t.kind==='expense').reduce((s,x)=>s+x.amount,0);
+  const revenueNet=fpNet+wiGross;
+  const foodCost=fpCost+wiCost;
+  const grossSales=fpGross+wiGross;
+  return {
+    fpCount:fp.length, wiCount:wi.length, count:o.length,
+    fpGross, fpComm, fpNet, fpCost, fpProfit:fpNet-fpCost,
+    wiGross, wiCost, wiProfit:wiGross-wiCost,
+    grossSales, revenueNet, foodCost, expenses:exp,
+    foodCostPct: grossSales? Math.round(foodCost/grossSales*100):0,
+    netProfit: revenueNet - foodCost - exp,
+  };
+}
+function dishCounts(){
+  const m={};
+  state.orders.forEach(o=>o.items.forEach(it=>{ m[it.id]=(m[it.id]||0)+it.qty; }));
+  return Object.entries(m).map(([id,q])=>({id,q})).sort((a,b)=>b.q-a.q);
+}
+
+/* ==========================================================================
+   RENDER
+   ========================================================================== */
+const PAGES = {
+  dashboard:['Dashboard',"Today's overview across all channels"],
+  orders:['Orders','Every order, tagged by channel — filter Foodpanda vs walk-in'],
+  pos:['Walk-in POS','Ring up counter sales & print an invoice'],
+  inventory:['Inventory','One shared ingredient stock for both channels'],
+  recipes:['Recipes','Define once — drives auto-deduction & true food cost'],
+  expenses:['Expenses & Accounts','Accounts, categories & every transaction — your kitchen cash book'],
+};
+
+function go(v){ state.view=v; render(); }
+
+function render(){
+  // nav + title
+  document.querySelectorAll('.nav-i').forEach(n=>n.classList.toggle('on',n.dataset.view===state.view));
+  document.getElementById('pageTitle').textContent=PAGES[state.view][0];
+  document.getElementById('pageSub').textContent=PAGES[state.view][1];
+  const lowN=ingredients.filter(i=>i.stock<=i.reorder).length;
+  const navLow=document.getElementById('navLow'); navLow.style.display=lowN?'inline-block':'none'; navLow.textContent=lowN;
+  const navO=document.getElementById('navOrders'); navO.style.display=state.orders.length?'inline-block':'none'; navO.textContent=state.orders.length;
+
+  const c=document.getElementById('content');
+  c.innerHTML = ({
+    dashboard:viewDashboard, orders:viewOrders, pos:viewPOS,
+    inventory:viewInventory, recipes:viewRecipes, expenses:viewExpenses
+  })[state.view]();
+}
+
+/* ---------- DASHBOARD ---------- */
+function viewDashboard(){
+  const t=totals();
+  const low=ingredients.filter(i=>i.stock<=i.reorder);
+  const maxRev=Math.max(t.wiGross,t.fpGross,1);
+  const top=dishCounts().slice(0,4);
+
+  return `
+  <div class="grid g4">
+    ${kpi('Net Revenue (today)','💰',fmtPKR(t.revenueNet),`After Foodpanda commission`,'up')}
+    ${kpi('Orders','🧾',t.count,`${t.fpCount} Foodpanda · ${t.wiCount} walk-in`,'up')}
+    ${kpi('Food Cost %','🥘',t.foodCostPct+'%',`Ingredients ${fmtPKR(t.foodCost)}`, t.foodCostPct>45?'down':'up')}
+    ${kpi('Net Profit','📈',fmtPKR(t.netProfit),`Rev − food − commission − expenses`, t.netProfit>0?'up':'down')}
+  </div>
+
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card">
+      <h3>💹 Profit by channel <span class="muted" style="text-transform:none;letter-spacing:0;font-weight:600">— same dish, different margin</span></h3>
+      ${channelRow('Walk-in shop','b-wi',t.wiGross,t.wiGross,t.wiCost,t.wiProfit,maxRev,0)}
+      <div style="height:14px"></div>
+      ${channelRow('Foodpanda','b-fp',t.fpGross,t.fpNet,t.fpCost,t.fpProfit,maxRev,t.fpComm)}
+      <div class="between small" style="margin-top:16px;padding-top:13px;border-top:1px solid var(--line);color:var(--muted)">
+        <span>Foodpanda commission @ ${settings.fpCommission}%</span>
+        <span style="color:var(--red);font-weight:700">− ${fmtPKR(t.fpComm)}</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>⚠️ Inventory alerts</h3>
+      ${low.length? low.map(i=>`
+        <div class="between" style="padding:10px 0;border-bottom:1px solid var(--line)">
+          <div class="row"><span style="font-size:18px">${i.emoji}</span>
+            <div><b style="font-size:13.5px">${i.name}</b><div class="small muted">${fmtQty(i.stock,i.unit)} left · reorder ${fmtQty(i.reorder,i.unit)}</div></div>
+          </div>
+          <button class="btn sm" onclick="restock('${i.id}')">Restock</button>
+        </div>`).join('')
+        : `<div class="empty">All ingredients above reorder level ✅<br><span class="small">Fire a few Foodpanda orders to see alerts trigger.</span></div>`}
+    </div>
+  </div>
+
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card">
+      <h3>🧾 Recent orders</h3>
+      <table><tbody>
+        ${state.orders.slice(0,6).map(o=>`<tr>
+          <td><b>${o.id}</b></td>
+          <td>${o.items.map(it=>it.qty+'× '+dish(it.id).name).join(', ')}</td>
+          <td><span class="badge ${o.channel==='foodpanda'?'b-fp':'b-wi'}">${o.channel==='foodpanda'?'Foodpanda':'Walk-in'}</span></td>
+          <td class="t-right"><b>${fmtPKR(o.gross)}</b></td>
+        </tr>`).join('')||'<tr><td class="empty">No orders yet</td></tr>'}
+      </tbody></table>
+    </div>
+    <div class="card">
+      <h3>🔥 Top dishes today</h3>
+      ${top.map(d=>{const mx=top[0].q;return `
+        <div style="margin-bottom:13px">
+          <div class="between small"><b>${dish(d.id).emoji} ${dish(d.id).name}</b><span class="muted">${d.q} sold</span></div>
+          <div class="stockbar"><i style="width:${Math.round(d.q/mx*100)}%"></i></div>
+        </div>`}).join('')||'<div class="empty">No sales yet</div>'}
+    </div>
+  </div>`;
+}
+function kpi(t,ic,v,d,dir){return `<div class="card kpi"><div class="ic">${ic}</div><div class="t">${t}</div><div class="v">${v}</div><div class="d ${dir}">${d}</div></div>`;}
+function channelRow(name,bcls,gross,net,cost,profit,max,comm){
+  return `<div>
+    <div class="between"><span class="badge ${bcls}">${name}</span><b>${fmtPKR(gross)} <span class="muted small" style="font-weight:600">gross</span></b></div>
+    <div class="stockbar" style="height:10px;margin-top:9px"><i style="width:${Math.round(net/max*100)}%;${bcls==='b-fp'?'background:linear-gradient(90deg,var(--accent2),var(--gold))':'background:linear-gradient(90deg,var(--green),#9ff0cf)'}"></i></div>
+    <div class="between small" style="margin-top:8px">
+      <span class="muted">Net ${fmtPKR(net)} − food ${fmtPKR(cost)}</span>
+      <span style="font-weight:800;color:${profit>0?'var(--green)':'var(--red)'}">Profit ${fmtPKR(profit)}</span>
+    </div>
+  </div>`;
+}
+
+/* ---------- ORDERS ---------- */
+function viewOrders(){
+  const f=state.orderFilter;
+  const list=state.orders.filter(o=>f==='all'||o.channel===f);
+  const chip=(k,l)=>`<div class="chip ${f===k?'on':''}" onclick="state.orderFilter='${k}';render()">${l}</div>`;
+  return `
+  <div class="filters">
+    ${chip('all','All orders ('+state.orders.length+')')}
+    ${chip('foodpanda','🛵 Foodpanda ('+state.orders.filter(o=>o.channel==='foodpanda').length+')')}
+    ${chip('walkin','🛒 Walk-in ('+state.orders.filter(o=>o.channel==='walkin').length+')')}
+  </div>
+  <div class="card" style="padding:6px 8px">
+    <table>
+      <thead><tr><th>Order</th><th>Items</th><th>Channel</th><th>Time</th><th class="t-right">Gross</th><th class="t-right">Commission</th><th class="t-right">Net</th></tr></thead>
+      <tbody>
+        ${list.map(o=>`<tr>
+          <td><b>${o.id}</b>${o.payment?`<div class="small muted">${o.payment}</div>`:''}</td>
+          <td>${o.items.map(it=>it.qty+'× '+dish(it.id).name).join(', ')}</td>
+          <td><span class="badge ${o.channel==='foodpanda'?'b-fp':'b-wi'}">${o.channel==='foodpanda'?'Foodpanda':'Walk-in'}</span></td>
+          <td class="muted small">${timeAgo(o.time)}</td>
+          <td class="t-right">${fmtPKR(o.gross)}</td>
+          <td class="t-right ${o.commission?'down':'muted'}">${o.commission?'− '+fmtPKR(o.commission):'—'}</td>
+          <td class="t-right"><b>${fmtPKR(o.net)}</b></td>
+        </tr>`).join('')||'<tr><td colspan="7" class="empty">No orders in this view</td></tr>'}
+      </tbody>
+    </table>
+  </div>`;
+}
+
+/* ---------- POS ---------- */
+function viewPOS(){
+  return `<div class="pos">
+    <div class="dishgrid">
+      ${menu.map(m=>{const cost=recipeCost(m);const mg=Math.round((m.price-cost)/m.price*100);return `
+        <button class="dish" onclick="addToCart('${m.id}')">
+          <div class="e">${m.emoji}</div><b>${m.name}</b>
+          <div class="pr">${fmtPKR(m.price)}</div>
+          <div class="mg">cost ${fmtPKR(cost)} · ${mg}% margin</div>
+        </button>`}).join('')}
+    </div>
+    <div class="cartbox">
+      <div class="hd">🛒 Current sale</div>
+      <div class="cartlist">
+        ${state.cart.length? state.cart.map(c=>{const m=dish(c.id);return `
+          <div class="citem">
+            <div class="nm">${m.emoji} ${m.name}<small>${fmtPKR(m.price)} each</small></div>
+            <button class="qtybtn" onclick="cartQty('${c.id}',-1)">−</button>
+            <b style="width:20px;text-align:center">${c.qty}</b>
+            <button class="qtybtn" onclick="cartQty('${c.id}',1)">＋</button>
+            <b style="width:74px;text-align:right">${fmtPKR(m.price*c.qty)}</b>
+          </div>`}).join('') : '<div class="cart-empty">Click dishes to add them to the sale.</div>'}
+      </div>
+      <div class="carttot">
+        <div class="between" style="margin-bottom:12px"><span class="muted">Total</span><span style="font-size:22px;font-weight:800">${fmtPKR(cartTotal())}</span></div>
+        <button class="btn primary" style="width:100%;justify-content:center" ${state.cart.length?'':'disabled style=\"opacity:.5;width:100%;justify-content:center\"'} onclick="payModal()">Charge &amp; invoice →</button>
+      </div>
+    </div>
+  </div>`;
+}
+function payModal(){
+  if(!state.cart.length)return;
+  openModal(`
+    <div class="sh-hd"><b>Take payment · ${fmtPKR(cartTotal())}</b><button class="x" onclick="closeModal()">✕</button></div>
+    <div class="sh-bd">
+      <p class="muted small" style="margin-bottom:16px">Choose how the customer is paying. Inventory will deduct and an invoice will be generated.</p>
+      <div class="grid g2">
+        <button class="btn" style="justify-content:center;padding:18px" onclick="checkout('Cash')">💵<br>Cash</button>
+        <button class="btn" style="justify-content:center;padding:18px" onclick="checkout('Card')">💳<br>Card</button>
+      </div>
+    </div>`);
+}
+function showInvoice(o){
+  const rows=o.items.map(it=>`<tr><td>${it.qty}× ${dish(it.id).name}</td><td style="text-align:right">${fmtPKR(dish(it.id).price*it.qty)}</td></tr>`).join('');
+  openModal(`
+    <div class="sh-hd"><b>Invoice ${o.id}</b><button class="x" onclick="closeModal()">✕</button></div>
+    <div class="sh-bd">
+      <div id="invoicePrint" class="inv">
+        <div class="ihd"><div class="lg">🍽️</div><b>${settings.businessName}</b><small>Walk-in · ${o.payment} · ${new Date(o.time).toLocaleString()}</small></div>
+        <table><tbody>${rows}</tbody></table>
+        <div class="tot between"><span>Total</span><span class="big">${fmtPKR(o.gross)}</span></div>
+        <div class="thanks">Invoice ${o.id} · Thank you! 🙏</div>
+      </div>
+      <div class="grid g2" style="margin-top:18px">
+        <button class="btn" style="justify-content:center" onclick="window.print()">🖨️ Print</button>
+        <button class="btn primary" style="justify-content:center" onclick="closeModal()">Done</button>
+      </div>
+    </div>`);
+}
+
+/* ---------- INVENTORY ---------- */
+function viewInventory(){
+  const lowN=ingredients.filter(i=>i.stock<=i.reorder).length;
+  return `
+  <div class="between" style="margin-bottom:16px">
+    <div class="muted small">${ingredients.length} ingredients · ${lowN} need attention</div>
+    <button class="btn primary" onclick="openIngredientForm()">＋ Add ingredient</button>
+  </div>
+  <div class="card" style="padding:6px 8px">
+    <table>
+      <thead><tr><th>Ingredient</th><th>In stock</th><th>Level</th><th>Reorder at</th><th>Unit cost</th><th>Stock value</th><th></th></tr></thead>
+      <tbody>
+        ${ingredients.map(i=>{
+          const low=i.stock<=i.reorder; const out=i.stock<=0;
+          const pct=Math.min(100,Math.round(i.stock/(i.reorder*2.5)*100));
+          const eu=defaultEntry(i.unit); const ef=ENTRY[eu].f;
+          return `<tr>
+            <td><div class="row"><span style="font-size:18px">${i.emoji}</span><b>${i.name}</b></div></td>
+            <td style="min-width:150px"><b>${fmtQty(i.stock,i.unit)}</b>
+              <div class="stockbar"><i class="${low?'low':''}" style="width:${pct}%"></i></div></td>
+            <td><span class="badge ${out?'b-out':low?'b-low':'b-ok'}">${out?'Out':low?'Low':'OK'}</span></td>
+            <td class="muted">${fmtQty(i.reorder,i.unit)}</td>
+            <td class="muted">${fmtPKR(i.cost*ef)}/${eu}</td>
+            <td><b>${fmtPKR(i.stock*i.cost)}</b></td>
+            <td class="t-right" style="white-space:nowrap">
+              <button class="btn sm ghost" onclick="openIngredientForm('${i.id}')" title="Edit">✏️</button>
+              <button class="btn sm ghost" onclick="openAdjustForm('${i.id}')" title="Physical count">📋</button>
+              <button class="btn sm" onclick="restock('${i.id}')">＋ Restock</button>
+            </td>
+          </tr>`}).join('')}
+      </tbody>
+    </table>
+  </div>
+  <p class="muted small" style="margin-top:14px">💡 <b>Restock</b> adds stock and logs an ingredient expense automatically. <b>📋 Physical count</b> reconciles real stock against wastage/spillage.</p>`;
+}
+
+/* ---------- RECIPES ---------- */
+function viewRecipes(){
+  return `
+  <div class="between" style="margin-bottom:16px">
+    <div class="muted small">${menu.length} dishes · recipes drive auto-deduction &amp; food cost</div>
+    <button class="btn primary" onclick="openRecipeForm()">＋ Add dish / recipe</button>
+  </div>
+  <div class="grid g2">
+    ${menu.map(m=>{const cost=recipeCost(m);const profit=m.price-cost;const mg=Math.round(profit/m.price*100);
+      const fpNet=m.price*(1-settings.fpCommission/100);const fpProfit=fpNet-cost;
+      return `<div class="card">
+        <div class="between" style="margin-bottom:6px">
+          <div class="row"><span style="font-size:26px">${m.emoji}</span><div><b style="font-size:16px">${m.name}</b><div class="small muted">Foodpanda code: ${m.fp}</div></div></div>
+          <div style="text-align:right">
+            <button class="btn sm ghost" onclick="openRecipeForm('${m.id}')" title="Edit recipe">✏️ Edit</button>
+            <div style="margin-top:6px"><b style="font-size:18px">${fmtPKR(m.price)}</b> <span class="small muted">sell</span></div>
+          </div>
+        </div>
+        <div style="margin:14px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:12px 0">
+          <div class="small muted" style="margin-bottom:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em">Recipe per plate</div>
+          ${m.recipe.map(([iid,q])=>`<div class="between small" style="padding:3px 0"><span>${ing(iid).emoji} ${ing(iid).name}</span><span class="muted">${fmtQty(q,ing(iid).unit)} · ${fmtPKR(q*ing(iid).cost)}</span></div>`).join('')}
+        </div>
+        <div class="grid g3" style="gap:8px;text-align:center">
+          <div><div class="small muted">Food cost</div><b>${fmtPKR(cost)}</b></div>
+          <div><div class="small muted">Walk-in profit</div><b style="color:var(--green)">${fmtPKR(profit)}<span class="small muted"> ${mg}%</span></b></div>
+          <div><div class="small muted">Foodpanda profit</div><b style="color:var(--accent-soft)">${fmtPKR(fpProfit)}<span class="small muted"> ${Math.round(fpProfit/m.price*100)}%</span></b></div>
+        </div>
+      </div>`}).join('')}
+  </div>`;
+}
+
+/* ---------- EXPENSES & ACCOUNTS (finance module) ---------- */
+function viewExpenses(){
+  const exp=state.txns.filter(t=>t.kind==='expense'), inc=state.txns.filter(t=>t.kind==='income');
+  const totalExp=exp.reduce((s,t)=>s+t.amount,0), totalInc=inc.reduce((s,t)=>s+t.amount,0);
+  const cats={}; exp.forEach(t=>{const c=category(t.categoryId);const k=c?c.icon+' '+c.name:'🧾 Other';cats[k]=(cats[k]||0)+t.amount;});
+  return `
+  <div class="between" style="margin-bottom:12px">
+    <div class="sec-title" style="margin:0">Accounts · total balance <span style="color:var(--txt)">${fmtPKR(totalBalance())}</span></div>
+    <div class="row" style="gap:8px">
+      <button class="btn sm" onclick="openAccountForm()">＋ Account</button>
+      <button class="btn primary sm" onclick="openTxnForm('expense')">＋ Add transaction</button>
+    </div>
+  </div>
+  <div class="grid g4">
+    ${accounts.map(a=>`<div class="card" style="padding:16px;cursor:pointer" onclick="openAccountForm('${a.id}')" title="Edit account">
+      <div class="between"><span style="font-size:22px">${a.icon}</span><span class="muted small">${a.name}</span></div>
+      <div style="font-size:22px;font-weight:800;margin-top:10px">${fmtPKR(accountBalance(a.id))}</div>
+    </div>`).join('')}
+  </div>
+
+  <div class="grid g3" style="margin-top:16px">
+    ${kpi('Money in','⬇️',fmtPKR(totalInc),'income recorded','up')}
+    ${kpi('Money out','⬆️',fmtPKR(totalExp),'expenses recorded','down')}
+    ${kpi('Net cash flow','💵',fmtPKR(totalInc-totalExp),'in − out',(totalInc-totalExp)>=0?'up':'down')}
+  </div>
+
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card">
+      <h3>📊 Expenses by category</h3>
+      ${Object.entries(cats).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`
+        <div style="margin-bottom:12px">
+          <div class="between small"><b>${k}</b><span class="muted">${fmtPKR(v)}</span></div>
+          <div class="stockbar"><i style="width:${totalExp?Math.round(v/totalExp*100):0}%"></i></div>
+        </div>`).join('')||'<div class="empty">No expenses yet</div>'}
+      <div class="between" style="margin-top:16px;padding-top:13px;border-top:1px solid var(--line)"><b>Total expenses</b><b style="font-size:18px">${fmtPKR(totalExp)}</b></div>
+    </div>
+    <div class="card">
+      <div class="between" style="margin-bottom:14px"><h3 style="margin:0">🏷️ Categories</h3><button class="btn sm" onclick="openCategoryForm('expense')">＋ New category</button></div>
+      <div class="small muted" style="margin-bottom:8px;font-weight:700">Expense</div>
+      <div class="row" style="flex-wrap:wrap;gap:7px;margin-bottom:14px">${categories.filter(c=>c.kind==='expense').map(c=>`<span class="badge b-low">${c.icon} ${c.name}</span>`).join('')}</div>
+      <div class="small muted" style="margin-bottom:8px;font-weight:700">Income</div>
+      <div class="row" style="flex-wrap:wrap;gap:7px">${categories.filter(c=>c.kind==='income').map(c=>`<span class="badge b-wi">${c.icon} ${c.name}</span>`).join('')}</div>
+      <p class="muted small" style="margin-top:14px">Fully customisable categories for both expenses and income — just like a personal-finance app.</p>
+    </div>
+  </div>
+
+  <div class="sec-title">Transaction history</div>
+  <div class="card" style="padding:6px 8px">
+    <table><thead><tr><th>Date</th><th>Type</th><th>Category / Transfer</th><th>Account</th><th>Note</th><th class="t-right">Amount</th></tr></thead>
+    <tbody>${state.txns.map(t=>{
+      const isExp=t.kind==='expense', isInc=t.kind==='income';
+      const label = t.kind==='transfer'
+        ? `→ ${account(t.toAccountId)?account(t.toAccountId).icon+' '+account(t.toAccountId).name:'—'}`
+        : (category(t.categoryId)?category(t.categoryId).icon+' '+category(t.categoryId).name:'—');
+      const color = isExp?'var(--red)':isInc?'var(--green)':'var(--muted)';
+      const sign  = isExp?'−':isInc?'+':'';
+      return `<tr>
+        <td class="muted small">${new Date(t.time).toLocaleDateString()} ${new Date(t.time).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</td>
+        <td><span class="badge ${isExp?'b-low':isInc?'b-wi':'b-fp'}">${t.kind}</span></td>
+        <td>${label}</td>
+        <td class="muted">${account(t.accountId)?account(t.accountId).icon+' '+account(t.accountId).name:'—'}</td>
+        <td>${t.note||''}</td>
+        <td class="t-right" style="color:${color};font-weight:800">${sign} ${fmtPKR(t.amount)}</td>
+      </tr>`;
+    }).join('')||'<tr><td colspan="6" class="empty">No transactions yet</td></tr>'}</tbody></table>
+  </div>`;
+}
+
+/* ==========================================================================
+   ADD / EDIT FORMS  (ingredients · recipes · physical count · settings)
+   ========================================================================== */
+// entry-unit → base-unit conversion (UI lets owner think in kg/L/pcs)
+const ENTRY = { kg:{base:'g',f:1000}, g:{base:'g',f:1}, L:{base:'ml',f:1000}, ml:{base:'ml',f:1}, pc:{base:'pc',f:1} };
+const defaultEntry = u => u==='g'?'kg':u==='ml'?'L':'pc';
+
+/* ---------- INGREDIENT FORM ---------- */
+function openIngredientForm(id){
+  const i = id?ing(id):null;
+  const eu = i?defaultEntry(i.unit):'kg', f = ENTRY[eu].f;
+  const v = i ? {name:i.name,emoji:i.emoji,eu,stock:i.stock/f,reorder:i.reorder/f,cost:+(i.cost*f).toFixed(2),perish:!!i.perishable}
+              : {name:'',emoji:'📦',eu:'kg',stock:'',reorder:'',cost:'',perish:false};
+  openModal(`
+    <div class="sh-hd"><b>${i?'Edit ingredient':'New ingredient'}</b><button class="x" onclick="closeModal()">✕</button></div>
+    <div class="sh-bd">
+      <div class="grid g2" style="gap:12px">
+        <div class="field" style="grid-column:span 2"><label>Ingredient name</label><input class="inp" id="igName" value="${v.name}" placeholder="e.g. Basmati Rice"></div>
+        <div class="field"><label>Icon</label><input class="inp" id="igEmoji" value="${v.emoji}" maxlength="2"></div>
+        <div class="field"><label>Measured in</label><select class="inp" id="igUnit">${['kg','g','L','ml','pc'].map(u=>`<option ${u===v.eu?'selected':''}>${u}</option>`).join('')}</select></div>
+        <div class="field"><label>Current stock</label><input class="inp" id="igStock" type="number" value="${v.stock}" placeholder="e.g. 60"></div>
+        <div class="field"><label>Reorder level</label><input class="inp" id="igReorder" type="number" value="${v.reorder}" placeholder="e.g. 12"></div>
+        <div class="field" style="grid-column:span 2"><label>Unit cost (Rs per measured unit)</label><input class="inp" id="igCost" type="number" step="0.01" value="${v.cost}" placeholder="e.g. 220 (Rs per kg)"></div>
+        <div class="field" style="grid-column:span 2"><label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-weight:600;text-transform:none;color:var(--txt)"><input type="checkbox" id="igPerish" ${v.perish?'checked':''} style="accent-color:var(--accent);width:16px;height:16px"> Perishable — track expiry</label></div>
+      </div>
+      <div class="grid ${i?'g2':''}" style="margin-top:8px;gap:10px">
+        ${i?`<button class="btn" style="justify-content:center;border-color:var(--accent2);color:var(--red)" onclick="deleteIngredient('${id}')">🗑 Delete</button>`:''}
+        <button class="btn primary" style="justify-content:center" onclick="saveIngredient('${id||''}')">${i?'Save changes':'Add ingredient'}</button>
+      </div>
+    </div>`);
+}
+function saveIngredient(id){
+  const name=document.getElementById('igName').value.trim();
+  if(!name){ toast('Name required','Please enter an ingredient name.','red'); return; }
+  const eu=document.getElementById('igUnit').value, {base,f}=ENTRY[eu];
+  const data={ name, emoji:document.getElementById('igEmoji').value.trim()||'📦', unit:base,
+    stock:(parseFloat(document.getElementById('igStock').value)||0)*f,
+    reorder:(parseFloat(document.getElementById('igReorder').value)||0)*f,
+    cost:(parseFloat(document.getElementById('igCost').value)||0)/f,
+    perishable:document.getElementById('igPerish').checked };
+  if(id){ Object.assign(ing(id),data); toast('✅ Ingredient updated',name,'green'); }
+  else { ingredients.push({id:'ing'+(state.seq++),...data}); toast('✅ Ingredient added',`${data.emoji} ${name} · ${fmtQty(data.stock,base)} in stock`,'green'); }
+  closeModal(); render();
+}
+function deleteIngredient(id){
+  const usedIn=menu.filter(m=>m.recipe.some(([iid])=>iid===id)).map(m=>m.name);
+  if(usedIn.length){ toast('Cannot delete','Used in: '+usedIn.join(', ')+'. Remove from those recipes first.','red'); return; }
+  const idx=ingredients.findIndex(x=>x.id===id); if(idx>-1)ingredients.splice(idx,1);
+  closeModal(); toast('🗑 Ingredient removed','','gold'); render();
+}
+
+/* ---------- PHYSICAL STOCK COUNT (reconciliation) ---------- */
+function openAdjustForm(id){
+  const i=ing(id), eu=defaultEntry(i.unit);
+  openModal(`
+    <div class="sh-hd"><b>📋 Physical count · ${i.emoji} ${i.name}</b><button class="x" onclick="closeModal()">✕</button></div>
+    <div class="sh-bd">
+      <p class="muted small" style="margin-bottom:14px">Count what's physically on the shelf. The difference is logged as a stock adjustment — this captures real-world wastage, spillage and staff meals.</p>
+      <div class="between" style="background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:14px"><span class="muted">System says</span><b>${fmtQty(i.stock,i.unit)}</b></div>
+      <div class="field"><label>Actual counted (${eu})</label><input class="inp" id="adjVal" type="number" value="${+(i.stock/ENTRY[eu].f).toFixed(2)}" oninput="adjPreview('${id}','${eu}')"></div>
+      <div id="adjPrev" class="small" style="margin-bottom:14px"></div>
+      <button class="btn primary" style="width:100%;justify-content:center" onclick="saveAdjust('${id}','${eu}')">Apply adjustment</button>
+    </div>`);
+  adjPreview(id,eu);
+}
+function adjPreview(id,eu){
+  const i=ing(id), counted=(parseFloat(document.getElementById('adjVal').value)||0)*ENTRY[eu].f, diff=counted-i.stock;
+  const el=document.getElementById('adjPrev');
+  el.innerHTML = Math.abs(diff)<0.5 ? '<span class="muted">No difference.</span>'
+    : diff<0 ? `<span style="color:var(--red)">▼ ${fmtQty(-diff,i.unit)} shrinkage</span> — value ${fmtPKR(-diff*i.cost)} written off.`
+             : `<span style="color:var(--green)">▲ ${fmtQty(diff,i.unit)} found</span> will be added.`;
+}
+function saveAdjust(id,eu){
+  const i=ing(id), counted=(parseFloat(document.getElementById('adjVal').value)||0)*ENTRY[eu].f, diff=counted-i.stock;
+  i.stock=counted; closeModal();
+  toast('📋 Stock adjusted: '+i.name, `${diff<0?'▼ '+fmtQty(-diff,i.unit)+' written off':'▲ '+fmtQty(Math.abs(diff),i.unit)+' added'} · now ${fmtQty(i.stock,i.unit)}`, diff<0?'gold':'green');
+  render();
+}
+
+/* ---------- RECIPE / DISH FORM (with live food-cost) ---------- */
+let draftRecipe=null;
+function openRecipeForm(id){
+  const m=id?dish(id):null;
+  draftRecipe = m ? {id,name:m.name,emoji:m.emoji,price:m.price,fp:m.fp,lines:m.recipe.map(([iid,q])=>({iid,q}))}
+                  : {id:null,name:'',emoji:'🍽️',price:'',fp:'',lines:[{iid:ingredients[0].id,q:''}]};
+  renderRecipeForm();
+}
+function captureRecipe(){
+  if(!document.getElementById('rcName'))return;
+  draftRecipe.name=document.getElementById('rcName').value;
+  draftRecipe.emoji=document.getElementById('rcEmoji').value;
+  draftRecipe.price=document.getElementById('rcPrice').value;
+  draftRecipe.fp=document.getElementById('rcFp').value;
+  draftRecipe.lines=[...document.querySelectorAll('.rl')].map(r=>({iid:r.querySelector('.rl-ing').value,q:r.querySelector('.rl-qty').value}));
+}
+function recipeAddLine(){ captureRecipe(); draftRecipe.lines.push({iid:ingredients[0].id,q:''}); renderRecipeForm(); }
+function recipeDelLine(idx){ captureRecipe(); draftRecipe.lines.splice(idx,1); renderRecipeForm(); }
+function recipeLiveCost(){
+  let cost=0;
+  document.querySelectorAll('.rl').forEach(r=>{
+    const i=ing(r.querySelector('.rl-ing').value), q=parseFloat(r.querySelector('.rl-qty').value)||0;
+    cost+=q*i.cost;
+    const c=r.querySelector('.rl-cost'); if(c)c.textContent=fmtPKR(q*i.cost);
+    const u=r.querySelector('.rl-unit'); if(u)u.textContent=i.unit;
+  });
+  const price=parseFloat(document.getElementById('rcPrice').value)||0;
+  const fpProfit=price*(1-settings.fpCommission/100)-cost;
+  document.getElementById('rcCost').textContent=fmtPKR(cost);
+  document.getElementById('rcMargin').innerHTML=price?`<b style="color:var(--green)">${fmtPKR(price-cost)}</b> <span class="muted small">${Math.round((price-cost)/price*100)}%</span>`:'—';
+  document.getElementById('rcFpProfit').innerHTML=price?`<b style="color:var(--accent-soft)">${fmtPKR(fpProfit)}</b>`:'—';
+}
+function recipeLineHtml(ln,idx){
+  return `<div class="rl row" style="gap:8px;margin-bottom:8px">
+    <select class="inp rl-ing" style="flex:2" onchange="recipeLiveCost()">${ingredients.map(i=>`<option value="${i.id}" ${i.id===ln.iid?'selected':''}>${i.emoji} ${i.name}</option>`).join('')}</select>
+    <input class="inp rl-qty" style="flex:1;min-width:60px" type="number" value="${ln.q}" placeholder="qty" oninput="recipeLiveCost()">
+    <span class="rl-unit muted small" style="width:22px">${ing(ln.iid).unit}</span>
+    <span class="rl-cost muted small" style="width:62px;text-align:right">—</span>
+    <button class="qtybtn" onclick="recipeDelLine(${idx})" title="Remove line">✕</button>
+  </div>`;
+}
+function renderRecipeForm(){
+  const d=draftRecipe;
+  openModal(`
+    <div class="sh-hd"><b>${d.id?'Edit recipe':'New dish & recipe'}</b><button class="x" onclick="closeModal()">✕</button></div>
+    <div class="sh-bd" style="max-height:80vh;overflow:auto">
+      <div class="grid g2" style="gap:12px">
+        <div class="field" style="grid-column:span 2"><label>Dish name</label><input class="inp" id="rcName" value="${d.name}" placeholder="e.g. Chicken Biryani"></div>
+        <div class="field"><label>Icon</label><input class="inp" id="rcEmoji" value="${d.emoji}" maxlength="2"></div>
+        <div class="field"><label>Sell price (Rs)</label><input class="inp" id="rcPrice" type="number" value="${d.price}" placeholder="450" oninput="recipeLiveCost()"></div>
+        <div class="field" style="grid-column:span 2"><label>Foodpanda product code</label><input class="inp" id="rcFp" value="${d.fp}" placeholder="e.g. FP-BIR-01"></div>
+      </div>
+      <div class="sec-title" style="margin:8px 0 10px">Recipe — ingredients used per plate</div>
+      <div id="rcLines">${d.lines.map((ln,idx)=>recipeLineHtml(ln,idx)).join('')||'<p class="muted small">No ingredients yet — add one below.</p>'}</div>
+      <button class="btn sm" style="margin-top:4px" onclick="recipeAddLine()">＋ Add ingredient</button>
+      <div style="margin-top:16px;padding:13px 15px;background:var(--bg2);border:1px solid var(--line);border-radius:12px">
+        <div class="grid g3" style="text-align:center;gap:8px">
+          <div><div class="small muted">Food cost</div><b id="rcCost">—</b></div>
+          <div><div class="small muted">Walk-in profit</div><span id="rcMargin">—</span></div>
+          <div><div class="small muted">Foodpanda profit</div><span id="rcFpProfit">—</span></div>
+        </div>
+      </div>
+      <div class="grid ${d.id?'g2':''}" style="margin-top:16px;gap:10px">
+        ${d.id?`<button class="btn" style="justify-content:center;border-color:var(--accent2);color:var(--red)" onclick="deleteRecipe('${d.id}')">🗑 Delete</button>`:''}
+        <button class="btn primary" style="justify-content:center" onclick="saveRecipe()">${d.id?'Save changes':'Add dish'}</button>
+      </div>
+    </div>`);
+  recipeLiveCost();
+}
+function saveRecipe(){
+  captureRecipe();
+  const d=draftRecipe, name=d.name.trim(), price=parseFloat(d.price)||0;
+  const lines=d.lines.map(l=>({iid:l.iid,q:parseFloat(l.q)||0})).filter(l=>l.q>0);
+  if(!name){ toast('Name required','Enter a dish name.','red'); return; }
+  if(price<=0){ toast('Price required','Enter a sell price.','red'); return; }
+  if(!lines.length){ toast('Recipe empty','Add at least one ingredient with a quantity.','red'); return; }
+  const recipe=lines.map(l=>[l.iid,l.q]);
+  if(d.id){ Object.assign(dish(d.id),{name,emoji:d.emoji||'🍽️',price,fp:d.fp.trim(),recipe}); toast('✅ Recipe updated',name,'green'); }
+  else { menu.push({id:'dish'+(state.seq++),name,emoji:d.emoji||'🍽️',price,fp:d.fp.trim()||('FP-'+state.seq),recipe}); toast('✅ Dish added',`${d.emoji} ${name} · ${lines.length} ingredients`,'green'); }
+  closeModal(); render();
+}
+function deleteRecipe(id){
+  const idx=menu.findIndex(x=>x.id===id); if(idx>-1)menu.splice(idx,1);
+  state.cart=state.cart.filter(c=>c.id!==id);
+  closeModal(); toast('🗑 Dish removed','','gold'); render();
+}
+
+/* ---------- FINANCE: transaction / category / account forms ---------- */
+function openTxnForm(type){
+  const tt=type||'expense', cats=categories.filter(c=>c.kind===tt);
+  openModal(`
+    <div class="sh-hd"><b>Add transaction</b><button class="x" onclick="closeModal()">✕</button></div>
+    <div class="sh-bd">
+      <div class="row" style="gap:6px;margin-bottom:16px">
+        ${['expense','income','transfer'].map(k=>`<button class="btn sm ${k===tt?'primary':''}" style="flex:1;justify-content:center" onclick="openTxnForm('${k}')">${k==='expense'?'➖ Expense':k==='income'?'➕ Income':'🔄 Transfer'}</button>`).join('')}
+      </div>
+      <div class="field"><label>Amount (Rs)</label><input class="inp" id="txAmt" type="number" placeholder="e.g. 5000" autofocus></div>
+      ${tt==='transfer' ? `
+        <div class="field"><label>From account</label><select class="inp" id="txAcc">${accounts.map(a=>`<option value="${a.id}">${a.icon} ${a.name} · ${fmtPKR(accountBalance(a.id))}</option>`).join('')}</select></div>
+        <div class="field"><label>To account</label><select class="inp" id="txTo">${accounts.map((a,i)=>`<option value="${a.id}" ${i===1?'selected':''}>${a.icon} ${a.name}</option>`).join('')}</select></div>`
+      : `
+        <div class="field"><label>${tt==='expense'?'Paid from':'Deposit to'} account</label><select class="inp" id="txAcc">${accounts.map(a=>`<option value="${a.id}">${a.icon} ${a.name} · ${fmtPKR(accountBalance(a.id))}</option>`).join('')}</select></div>
+        <div class="field"><label>Category</label><div class="row" style="gap:8px">
+          <select class="inp" id="txCat" style="flex:1">${cats.map(c=>`<option value="${c.id}">${c.icon} ${c.name}</option>`).join('')}</select>
+          <button class="btn sm" onclick="openCategoryForm('${tt}')" title="New category">＋</button>
+        </div></div>`}
+      <div class="field"><label>Note (optional)</label><input class="inp" id="txNote" placeholder="e.g. supplier payment"></div>
+      <button class="btn primary" style="width:100%;justify-content:center" onclick="saveTxn('${tt}')">Save ${tt}</button>
+    </div>`);
+}
+function saveTxn(tt){
+  const amount=parseFloat(document.getElementById('txAmt').value)||0;
+  if(amount<=0){ toast('Enter an amount','Please enter a valid amount.','red'); return; }
+  const accountId=document.getElementById('txAcc').value;
+  const note=document.getElementById('txNote')?document.getElementById('txNote').value.trim():'';
+  if(tt==='transfer'){
+    const toAccountId=document.getElementById('txTo').value;
+    if(toAccountId===accountId){ toast('Pick two accounts','A transfer needs two different accounts.','red'); return; }
+    addTxn({kind:'transfer',accountId,toAccountId,amount,note:note||'Transfer'});
+    toast('🔄 Transfer saved',`${fmtPKR(amount)} · ${account(accountId).name} → ${account(toAccountId).name}`,'green');
+  } else {
+    const categoryId=document.getElementById('txCat').value;
+    addTxn({kind:tt,accountId,categoryId,amount,note:note||category(categoryId).name});
+    toast(tt==='expense'?'➖ Expense recorded':'➕ Income recorded',`${category(categoryId).name}: ${fmtPKR(amount)}`, tt==='expense'?'gold':'green');
+  }
+  closeModal(); render();
+}
+function openCategoryForm(kind){
+  openModal(`
+    <div class="sh-hd"><b>New category</b><button class="x" onclick="closeModal()">✕</button></div>
+    <div class="sh-bd">
+      <div class="grid g2" style="gap:12px">
+        <div class="field" style="grid-column:span 2"><label>Category name</label><input class="inp" id="catName" placeholder="e.g. Marketing"></div>
+        <div class="field"><label>Icon</label><input class="inp" id="catIcon" value="🏷️" maxlength="2"></div>
+        <div class="field"><label>Type</label><select class="inp" id="catKind"><option value="expense" ${kind!=='income'?'selected':''}>Expense</option><option value="income" ${kind==='income'?'selected':''}>Income</option></select></div>
+      </div>
+      <button class="btn primary" style="width:100%;justify-content:center;margin-top:6px" onclick="saveCategory()">Add category</button>
+    </div>`);
+}
+function saveCategory(){
+  const name=document.getElementById('catName').value.trim();
+  if(!name){ toast('Name required','Enter a category name.','red'); return; }
+  const kind=document.getElementById('catKind').value;
+  categories.push({id:'cat'+(state.seq++),name,icon:document.getElementById('catIcon').value.trim()||'🏷️',kind});
+  toast('✅ Category added',`${name} (${kind})`,'green');
+  openTxnForm(kind);
+}
+function openAccountForm(id){
+  const a=id?account(id):null;
+  openModal(`
+    <div class="sh-hd"><b>${a?'Edit account':'New account'}</b><button class="x" onclick="closeModal()">✕</button></div>
+    <div class="sh-bd">
+      <div class="grid g2" style="gap:12px">
+        <div class="field" style="grid-column:span 2"><label>Account name</label><input class="inp" id="acName" value="${a?a.name:''}" placeholder="e.g. Meezan Bank"></div>
+        <div class="field"><label>Icon</label><input class="inp" id="acIcon" value="${a?a.icon:'🏦'}" maxlength="2"></div>
+        <div class="field"><label>Opening balance (Rs)</label><input class="inp" id="acOpen" type="number" value="${a?a.opening:''}" placeholder="0"></div>
+      </div>
+      ${a?`<p class="muted small" style="margin:2px 0 12px">Current balance ${fmtPKR(accountBalance(id))} (opening + transactions).</p>`:''}
+      <div class="grid ${a?'g2':''}" style="margin-top:4px;gap:10px">
+        ${a?`<button class="btn" style="justify-content:center;border-color:var(--accent2);color:var(--red)" onclick="deleteAccount('${id}')">🗑 Delete</button>`:''}
+        <button class="btn primary" style="justify-content:center" onclick="saveAccount('${id||''}')">${a?'Save changes':'Add account'}</button>
+      </div>
+    </div>`);
+}
+function saveAccount(id){
+  const name=document.getElementById('acName').value.trim();
+  if(!name){ toast('Name required','Enter an account name.','red'); return; }
+  const data={name,icon:document.getElementById('acIcon').value.trim()||'🏦',opening:parseFloat(document.getElementById('acOpen').value)||0};
+  if(id){ Object.assign(account(id),data); toast('✅ Account updated',name,'green'); }
+  else { accounts.push({id:'acc'+(state.seq++),...data}); toast('✅ Account added',`${data.icon} ${name}`,'green'); }
+  closeModal(); render();
+}
+function deleteAccount(id){
+  if(accounts.length<=1){ toast('Keep one account','You need at least one account.','red'); return; }
+  if(state.txns.some(t=>t.accountId===id||t.toAccountId===id)){ toast('Cannot delete','This account has transactions.','red'); return; }
+  const idx=accounts.findIndex(a=>a.id===id); if(idx>-1)accounts.splice(idx,1);
+  closeModal(); toast('🗑 Account removed','','gold'); render();
+}
+
+/* ---------- SETTINGS ---------- */
+function openSettings(){
+  openModal(`
+    <div class="sh-hd"><b>⚙️ Settings</b><button class="x" onclick="closeModal()">✕</button></div>
+    <div class="sh-bd">
+      <div class="field"><label>Business name (shown on invoices)</label><input class="inp" id="setName" value="${settings.businessName}"></div>
+      <div class="field"><label>Foodpanda commission (%)</label><input class="inp" id="setComm" type="number" value="${settings.fpCommission}"></div>
+      <p class="muted small" style="margin-bottom:16px">Commission is deducted from Foodpanda revenue to reveal true profit. Foodpanda typically charges 25–35%. Changing it instantly recalculates every Foodpanda order &amp; the dashboard.</p>
+      <button class="btn primary" style="width:100%;justify-content:center" onclick="saveSettings()">Save settings</button>
+    </div>`);
+}
+function saveSettings(){
+  settings.businessName=document.getElementById('setName').value.trim()||settings.businessName;
+  settings.fpCommission=Math.max(0,Math.min(90,parseFloat(document.getElementById('setComm').value)||0));
+  state.orders.forEach(o=>{ if(o.channel==='foodpanda'){ o.commission=Math.round(o.gross*settings.fpCommission/100); o.net=o.gross-o.commission; } });
+  document.getElementById('brandName').textContent=settings.businessName;
+  closeModal(); toast('⚙️ Settings saved',`Commission ${settings.fpCommission}% · ${settings.businessName}`,'green'); render();
+}
+
+/* ==========================================================================
+   MODAL + TOAST
+   ========================================================================== */
+function openModal(html){ document.getElementById('sheet').innerHTML=html; document.getElementById('modal').classList.add('show'); }
+function closeModal(){ document.getElementById('modal').classList.remove('show'); }
+document.getElementById('modal').addEventListener('click',e=>{ if(e.target.id==='modal')closeModal(); });
+
+function toast(title,body,type){
+  const el=document.createElement('div');
+  el.className='toast '+(type||'');
+  el.innerHTML=`<b>${title}</b><p>${body}</p>`;
+  document.getElementById('toasts').appendChild(el);
+  setTimeout(()=>{el.style.transition='opacity .4s,transform .4s';el.style.opacity='0';el.style.transform='translateX(40px)';setTimeout(()=>el.remove(),400);},5200);
+}
+
+/* ==========================================================================
+   NAV + BOOT
+   ========================================================================== */
+document.querySelectorAll('.nav-i').forEach(n=>n.addEventListener('click',()=>go(n.dataset.view)));
+seed();
+render();
+// a live Foodpanda order shortly after load to create the "it's alive" moment
+setTimeout(()=>{ if(state.view==='dashboard') simulateFoodpanda(); }, 2600);
+</script>
+</body>
+</html>
