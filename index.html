@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Homemade Kitchen Co. — Kitchen Ops (Prototype)</title>
+<title>Cuisine By Ayesha Kamil — Kitchen Ops (Prototype)</title>
 <!--
   ============================================================================
   CLICKABLE PROTOTYPE · Kitchen Operations System  ·  built by Quantum Force
@@ -20,7 +20,7 @@
     5. Dashboard shows PROFIT SPLIT BY CHANNEL
        (walk-in full margin vs Foodpanda AFTER ~30% commission)
 
-  REBRAND: find & replace "Homemade Kitchen Co." · colours in :root below.
+  REBRAND: find & replace "Cuisine By Ayesha Kamil" · colours in :root below.
   ============================================================================
 -->
 <style>
@@ -204,7 +204,7 @@
   <aside class="sidebar">
     <div class="brand">
       <div class="logo">🍽️</div>
-      <div><b id="brandName">Homemade Kitchen Co.</b><small>Kitchen Ops · v0 prototype</small></div>
+      <div><b id="brandName">Cuisine By Ayesha Kamil</b><small>Kitchen Ops · v0 prototype</small></div>
     </div>
     <div class="nav-i on" data-view="dashboard"><span class="e">📊</span> Dashboard</div>
     <div class="nav-i" data-view="orders"><span class="e">🧾</span> Orders <span class="nav-tag" id="navOrders" style="display:none">0</span></div>
@@ -361,7 +361,7 @@ const menu = [
 const dish = id => menu.find(x=>x.id===id);
 const CATS = ['Breakfast','Pakistani Cuisine','Deals','Tea-time Snacks','Roti & Parathas','Dessert','Sides & Add-ons','Beverages','Cutlery'];
 
-const settings = { fpCommission:30, businessName:'Homemade Kitchen Co.' }; // Foodpanda commission % + brand
+const settings = { fpCommission:30, businessName:'Cuisine By Ayesha Kamil' }; // Foodpanda commission % + brand
 
 /* ---- money accounts & categories (editable, like a personal-finance app) ---- */
 const accounts = [
