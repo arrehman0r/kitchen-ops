@@ -243,32 +243,123 @@
    ========================================================================== */
 const UNIT = { g:'g', ml:'ml', pc:'pc' };
 
+// Ingredients (raw materials). Base units: g / ml / pc. Costs in PKR per base unit.
 const ingredients = [
-  { id:'rice',    name:'Basmati Rice', emoji:'🍚', unit:'g',  stock:60000, reorder:12000, cost:0.22 },
-  { id:'chicken', name:'Chicken',      emoji:'🍗', unit:'g',  stock:12500, reorder:10000, cost:0.72 },
-  { id:'beef',    name:'Beef',         emoji:'🥩', unit:'g',  stock:15000, reorder:5000,  cost:1.05 },
-  { id:'masala',  name:'Masala Mix',   emoji:'🧂', unit:'g',  stock:1750,  reorder:1500,  cost:1.20 },
-  { id:'oil',     name:'Cooking Oil',  emoji:'🫒', unit:'ml', stock:18000, reorder:5000,  cost:0.50 },
-  { id:'yogurt',  name:'Yogurt',       emoji:'🥛', unit:'g',  stock:6000,  reorder:2000,  cost:0.28 },
-  { id:'flour',   name:'Flour',        emoji:'🌾', unit:'g',  stock:20000, reorder:5000,  cost:0.10 },
-  { id:'egg',     name:'Eggs',         emoji:'🥚', unit:'pc', stock:120,   reorder:36,    cost:22   },
+  { id:'bread',     name:'Bread (slice)',       emoji:'🍞', unit:'pc', stock:200,   reorder:60,   cost:12 },
+  { id:'egg',       name:'Eggs',                emoji:'🥚', unit:'pc', stock:240,   reorder:60,   cost:25 },
+  { id:'chicken',   name:'Chicken',             emoji:'🍗', unit:'g',  stock:20000, reorder:8000, cost:0.75 },
+  { id:'potato',    name:'Potatoes',            emoji:'🥔', unit:'g',  stock:30000, reorder:8000, cost:0.10 },
+  { id:'onion',     name:'Onions',              emoji:'🧅', unit:'g',  stock:20000, reorder:6000, cost:0.12 },
+  { id:'tomato',    name:'Tomatoes',            emoji:'🍅', unit:'g',  stock:12000, reorder:4000, cost:0.15 },
+  { id:'cucumber',  name:'Cucumber',            emoji:'🥒', unit:'g',  stock:6000,  reorder:2000, cost:0.10 },
+  { id:'mayo',      name:'Mayonnaise',          emoji:'🥫', unit:'g',  stock:5000,  reorder:1500, cost:0.60 },
+  { id:'flour',     name:'Flour (Atta/Maida)',  emoji:'🌾', unit:'g',  stock:40000, reorder:10000,cost:0.10 },
+  { id:'besan',     name:'Gram Flour (Besan)',  emoji:'🌾', unit:'g',  stock:8000,  reorder:2500, cost:0.18 },
+  { id:'oil',       name:'Cooking Oil',         emoji:'🫒', unit:'ml', stock:25000, reorder:6000, cost:0.55 },
+  { id:'ghee',      name:'Desi Ghee',           emoji:'🧈', unit:'g',  stock:6000,  reorder:2000, cost:1.80 },
+  { id:'rice',      name:'Rice',                emoji:'🍚', unit:'g',  stock:40000, reorder:10000,cost:0.22 },
+  { id:'urad',      name:'Mash Daal',           emoji:'🫘', unit:'g',  stock:8000,  reorder:2500, cost:0.45 },
+  { id:'masoor',    name:'Masoor Daal',         emoji:'🫘', unit:'g',  stock:8000,  reorder:2500, cost:0.30 },
+  { id:'channa',    name:'Kala Channa',         emoji:'🫘', unit:'g',  stock:8000,  reorder:2500, cost:0.35 },
+  { id:'bhindi',    name:'Bhindi (Okra)',       emoji:'🫑', unit:'g',  stock:6000,  reorder:2000, cost:0.30 },
+  { id:'spinach',   name:'Palak (Spinach)',     emoji:'🥬', unit:'g',  stock:6000,  reorder:2000, cost:0.20 },
+  { id:'yogurt',    name:'Yogurt',              emoji:'🥛', unit:'g',  stock:8000,  reorder:2500, cost:0.28 },
+  { id:'masala',    name:'Masala Mix',          emoji:'🧂', unit:'g',  stock:5000,  reorder:1500, cost:1.20 },
+  { id:'sugar',     name:'Sugar',               emoji:'🍬', unit:'g',  stock:12000, reorder:3000, cost:0.13 },
+  { id:'gurr',      name:'Gurr (Jaggery)',      emoji:'🟤', unit:'g',  stock:4000,  reorder:1500, cost:0.30 },
+  { id:'tea',       name:'Tea Leaves',          emoji:'🍵', unit:'g',  stock:4000,  reorder:1200, cost:1.50 },
+  { id:'milk',      name:'Milk',                emoji:'🥛', unit:'ml', stock:20000, reorder:6000, cost:0.18 },
+  { id:'cardamom',  name:'Cardamom (Elaichi)',  emoji:'🫧', unit:'g',  stock:500,   reorder:150,  cost:8.0 },
+  { id:'coffee',    name:'Coffee',              emoji:'☕', unit:'g',  stock:1000,  reorder:300,  cost:5.0 },
+  { id:'cream',     name:'Cream',               emoji:'🥛', unit:'ml', stock:3000,  reorder:1000, cost:0.60 },
+  { id:'cheese',    name:'Cheese',              emoji:'🧀', unit:'g',  stock:5000,  reorder:1500, cost:2.0 },
+  { id:'lemon',     name:'Lemon',               emoji:'🍋', unit:'pc', stock:60,    reorder:20,   cost:15 },
+  { id:'jamshirin', name:'Jam-e-Shirin Syrup',  emoji:'🧃', unit:'ml', stock:4000,  reorder:1200, cost:0.40 },
+  { id:'nuggets',   name:'Chicken Nuggets',     emoji:'🍗', unit:'pc', stock:120,   reorder:40,   cost:35 },
+  { id:'rusk',      name:'Dawn Rusk',           emoji:'🍪', unit:'pc', stock:100,   reorder:30,   cost:12 },
+  { id:'pepsi',     name:'Pepsi (can)',         emoji:'🥤', unit:'pc', stock:60,    reorder:24,   cost:90 },
+  { id:'mirinda',   name:'Mirinda (can)',       emoji:'🥤', unit:'pc', stock:48,    reorder:24,   cost:95 },
+  { id:'sevenup',   name:'7up (can)',           emoji:'🥤', unit:'pc', stock:48,    reorder:24,   cost:90 },
+  { id:'water',     name:'Nestle Water 500ml',  emoji:'💧', unit:'pc', stock:72,    reorder:24,   cost:70 },
+  { id:'disposable',name:'Disposable Items',    emoji:'🥢', unit:'pc', stock:300,   reorder:100,  cost:8 },
 ];
 const ing = id => ingredients.find(x=>x.id===id);
 
-// menu items + recipe (BOM) + foodpanda product code
+// Menu items + recipe (BOM) + Foodpanda product code + category
 const menu = [
-  { id:'biryani', name:'Chicken Biryani', emoji:'🍛', price:450, fp:'FP-BIR-01',
-    recipe:[['rice',220],['chicken',130],['masala',14],['oil',25],['yogurt',35]] },
-  { id:'karahi',  name:'Chicken Karahi',  emoji:'🍗', price:950, fp:'FP-KAR-02',
-    recipe:[['chicken',500],['oil',60],['masala',25],['yogurt',30]] },
-  { id:'pulao',   name:'Beef Pulao',      emoji:'🍲', price:520, fp:'FP-PUL-03',
-    recipe:[['rice',230],['beef',210],['oil',35],['masala',18]] },
-  { id:'roll',    name:'Chicken Roll',    emoji:'🌯', price:220, fp:'FP-ROL-04',
-    recipe:[['chicken',120],['flour',80],['oil',20],['egg',1]] },
-  { id:'burger',  name:'Zinger Burger',   emoji:'🍔', price:380, fp:'FP-BUR-05',
-    recipe:[['chicken',150],['flour',60],['oil',40],['egg',1]] },
+  // Breakfast
+  { id:'toast_bread', cat:'Breakfast', name:'Toasted Bread (2 pcs)', emoji:'🍞', price:50,  fp:'FP-101', recipe:[['bread',2],['oil',3]] },
+  { id:'sandwich', cat:'Breakfast', name:'Sandwich Mayo Chicken', emoji:'🥪', price:155, fp:'FP-102', recipe:[['bread',2],['chicken',60],['mayo',25]] },
+  { id:'aloo_anda_pyaaz', cat:'Breakfast', name:'Aloo Anda Pyaaz (250g)', emoji:'🍳', price:190, fp:'FP-103', recipe:[['potato',150],['egg',1],['onion',50],['oil',20],['masala',8]] },
+  { id:'french_toast_sweet', cat:'Breakfast', name:'French Toast (Sweet)', emoji:'🍞', price:95, fp:'FP-104', recipe:[['bread',2],['egg',1],['sugar',15],['milk',20]] },
+  { id:'fried_egg', cat:'Breakfast', name:'Fried Egg', emoji:'🍳', price:100, fp:'FP-105', recipe:[['egg',1],['oil',8]] },
+  { id:'boiled_egg', cat:'Breakfast', name:'Boiled Egg', emoji:'🥚', price:80, fp:'FP-106', recipe:[['egg',1]] },
+  { id:'omelette', cat:'Breakfast', name:'Omelette (1 egg)', emoji:'🍳', price:115, fp:'FP-107', recipe:[['egg',1],['onion',20],['tomato',20],['oil',8],['masala',4]] },
+  { id:'french_toast_spicy', cat:'Breakfast', name:'French Toast (Spicy)', emoji:'🍞', price:95, fp:'FP-108', recipe:[['bread',2],['egg',1],['onion',15],['masala',5],['oil',10]] },
+  // Pakistani Cuisine
+  { id:'bhindi', cat:'Pakistani Cuisine', name:'Bhindi ka Salan (250g)', emoji:'🫑', price:310, fp:'FP-201', recipe:[['bhindi',200],['onion',40],['tomato',40],['oil',30],['masala',12]] },
+  { id:'daal_mash', cat:'Pakistani Cuisine', name:'Daal Mash (250g)', emoji:'🫘', price:280, fp:'FP-202', recipe:[['urad',120],['onion',30],['oil',25],['masala',12]] },
+  { id:'masar_daal', cat:'Pakistani Cuisine', name:'Masar Daal (300g)', emoji:'🫘', price:190, fp:'FP-203', recipe:[['masoor',130],['onion',25],['oil',20],['masala',10]] },
+  { id:'maash_makhni', cat:'Pakistani Cuisine', name:'Maash Dal Makhni (280g)', emoji:'🫘', price:320, fp:'FP-204', recipe:[['urad',130],['cream',20],['oil',20],['masala',12]] },
+  { id:'kofta', cat:'Pakistani Cuisine', name:'Special Kofta + Boiled Egg (280g)', emoji:'🍲', price:295, fp:'FP-205', recipe:[['chicken',120],['egg',1],['onion',40],['oil',25],['masala',12]] },
+  { id:'kalay_channay', cat:'Pakistani Cuisine', name:'Kalay Channay (300g)', emoji:'🫘', price:210, fp:'FP-206', recipe:[['channa',130],['onion',30],['oil',20],['masala',10]] },
+  { id:'aloo_bhujiya', cat:'Pakistani Cuisine', name:'Aalu Ki Bhujiya (250g)', emoji:'🥔', price:170, fp:'FP-207', recipe:[['potato',180],['onion',40],['oil',20],['masala',8]] },
+  { id:'kadhi_pakora', cat:'Pakistani Cuisine', name:'Kadhi Pakora (300g, 3 pakoras)', emoji:'🍲', price:250, fp:'FP-208', recipe:[['besan',80],['yogurt',100],['onion',30],['oil',30],['masala',10]] },
+  { id:'boiled_rice', cat:'Pakistani Cuisine', name:'Boiled Rice (380g)', emoji:'🍚', price:170, fp:'FP-209', recipe:[['rice',200],['oil',10]] },
+  { id:'alo_chawal', cat:'Pakistani Cuisine', name:'Alo Walay Chawal (400g)', emoji:'🍚', price:265, fp:'FP-210', recipe:[['rice',200],['potato',120],['oil',25],['masala',10]] },
+  { id:'aloo_palak', cat:'Pakistani Cuisine', name:'Aloo Palak (250g)', emoji:'🥬', price:250, fp:'FP-211', recipe:[['potato',120],['spinach',120],['onion',30],['oil',25],['masala',10]] },
+  // Deals
+  { id:'deal3', cat:'Deals', name:'Deal 3 — Plain Paratha + Omelet', emoji:'🍳', price:215, fp:'FP-303', recipe:[['flour',100],['oil',28],['egg',1],['onion',20],['masala',4]] },
+  { id:'deal4', cat:'Deals', name:'Deal 4 — Lachay Paratha + Tea', emoji:'🫓', price:240, fp:'FP-304', recipe:[['flour',110],['oil',30],['tea',5],['milk',80],['sugar',12]] },
+  { id:'deal5', cat:'Deals', name:'Deal 5 — Tea + Dawn Rusk (4pc)', emoji:'🍵', price:180, fp:'FP-305', recipe:[['tea',5],['milk',80],['sugar',12],['rusk',4]] },
+  { id:'deal6', cat:'Deals', name:'Deal 6 — Fried Egg + 1 Bread', emoji:'🍳', price:130, fp:'FP-306', recipe:[['egg',1],['oil',8],['bread',1]] },
+  { id:'deal11', cat:'Deals', name:'Deal 11 — Masar Daal + Rice', emoji:'🍚', price:350, fp:'FP-311', recipe:[['masoor',130],['rice',180],['oil',25],['masala',10]] },
+  { id:'deal12', cat:'Deals', name:'Deal 12 — Kadhi Pakora + Paratha', emoji:'🍲', price:385, fp:'FP-312', recipe:[['besan',80],['yogurt',100],['oil',50],['masala',10],['flour',100]] },
+  { id:'deal13', cat:'Deals', name:'Deal 13 — Kadhi Pakora + Rice', emoji:'🍚', price:410, fp:'FP-313', recipe:[['besan',80],['yogurt',100],['oil',40],['masala',10],['rice',180]] },
+  { id:'deal15', cat:'Deals', name:'Deal 15 — Aalu Bhujiya + Paratha', emoji:'🥔', price:275, fp:'FP-315', recipe:[['potato',180],['onion',40],['oil',40],['masala',8],['flour',100]] },
+  { id:'deal16', cat:'Deals', name:'Deal 16 — Kalay Channay + Rice', emoji:'🍚', price:375, fp:'FP-316', recipe:[['channa',130],['rice',180],['oil',25],['masala',10]] },
+  { id:'deal17', cat:'Deals', name:'Deal 17 — Maash Makhni + Paratha', emoji:'🫘', price:465, fp:'FP-317', recipe:[['urad',130],['cream',20],['oil',40],['masala',12],['flour',100]] },
+  { id:'deal18', cat:'Deals', name:'Deal 18 — Kofta + Anda + Paratha', emoji:'🍲', price:395, fp:'FP-318', recipe:[['chicken',120],['egg',1],['oil',40],['masala',12],['flour',100],['onion',30]] },
+  { id:'deal21', cat:'Deals', name:'Deal 21 — Sweet French Toast + Tea', emoji:'🍞', price:235, fp:'FP-321', recipe:[['bread',2],['egg',1],['sugar',27],['milk',100],['tea',5]] },
+  { id:'deal24', cat:'Deals', name:'Deal 24 — Nuggets (4pc) + Tea', emoji:'🍗', price:355, fp:'FP-324', recipe:[['nuggets',4],['oil',20],['tea',5],['milk',80],['sugar',12]] },
+  // Tea-time Snacks
+  { id:'cutlets', cat:'Tea-time Snacks', name:'Potato Cheese Cutlets (60g)', emoji:'🥔', price:75, fp:'FP-401', recipe:[['potato',50],['cheese',15],['oil',15],['masala',3]] },
+  { id:'croquettes', cat:'Tea-time Snacks', name:'Chicken Cheese Croquettes (2pc)', emoji:'🧀', price:175, fp:'FP-402', recipe:[['chicken',60],['cheese',20],['flour',20],['oil',25]] },
+  { id:'chicken_fries', cat:'Tea-time Snacks', name:'Chicken Fries (2pc)', emoji:'🍗', price:150, fp:'FP-403', recipe:[['chicken',80],['flour',15],['oil',25]] },
+  { id:'veg_samosa', cat:'Tea-time Snacks', name:'Chicken Veg Samosa (2 mini)', emoji:'🥟', price:135, fp:'FP-404', recipe:[['flour',40],['potato',40],['chicken',30],['oil',20],['masala',4]] },
+  { id:'french_fries', cat:'Tea-time Snacks', name:'French Fries', emoji:'🍟', price:170, fp:'FP-405', recipe:[['potato',200],['oil',35]] },
+  { id:'chicken_burger', cat:'Tea-time Snacks', name:'Chicken Burger', emoji:'🍔', price:300, fp:'FP-406', recipe:[['flour',80],['chicken',100],['mayo',20],['oil',20]] },
+  { id:'nuggets_snack', cat:'Tea-time Snacks', name:'Nuggets (4pc)', emoji:'🍗', price:235, fp:'FP-407', recipe:[['nuggets',4],['oil',20]] },
+  { id:'chapli_burger', cat:'Tea-time Snacks', name:'Chicken Chapli Burger', emoji:'🍔', price:255, fp:'FP-408', recipe:[['flour',80],['chicken',90],['onion',30],['oil',25],['masala',8]] },
+  // Roti & Parathas
+  { id:'plain_paratha', cat:'Roti & Parathas', name:'Plain Paratha', emoji:'🫓', price:120, fp:'FP-501', recipe:[['flour',100],['oil',25]] },
+  { id:'lachay_paratha', cat:'Roti & Parathas', name:'Lachay Wala Paratha', emoji:'🫓', price:150, fp:'FP-502', recipe:[['flour',110],['oil',35]] },
+  { id:'aloo_paratha', cat:'Roti & Parathas', name:'Aloo Paratha', emoji:'🫓', price:230, fp:'FP-503', recipe:[['flour',110],['potato',120],['oil',30],['masala',6]] },
+  { id:'alo_cheese_paratha', cat:'Roti & Parathas', name:'Alo Cheese Paratha', emoji:'🧀', price:260, fp:'FP-504', recipe:[['flour',110],['potato',100],['cheese',40],['oil',30]] },
+  { id:'sada_roti', cat:'Roti & Parathas', name:'Sada Roti', emoji:'🫓', price:55, fp:'FP-505', recipe:[['flour',70],['oil',3]] },
+  { id:'desi_ghee_paratha', cat:'Roti & Parathas', name:'Special Desi Ghee Paratha', emoji:'🧈', price:200, fp:'FP-506', recipe:[['flour',110],['ghee',25]] },
+  { id:'meetha_paratha', cat:'Roti & Parathas', name:'Meetha Paratha', emoji:'🫓', price:160, fp:'FP-507', recipe:[['flour',100],['sugar',30],['oil',25]] },
+  // Dessert
+  { id:'gurr_chawal', cat:'Dessert', name:'Gurr Walay Chawal', emoji:'🍚', price:235, fp:'FP-601', recipe:[['rice',180],['gurr',60],['oil',20]] },
+  // Sides & Add-ons
+  { id:'veg_salad', cat:'Sides & Add-ons', name:'Vegetable Salad', emoji:'🥗', price:60, fp:'FP-701', recipe:[['cucumber',60],['tomato',50],['onion',20]] },
+  { id:'zeera_rice', cat:'Sides & Add-ons', name:'Zeera White Rice (350g)', emoji:'🍚', price:170, fp:'FP-702', recipe:[['rice',200],['oil',15],['masala',3]] },
+  // Beverages
+  { id:'mirinda_d', cat:'Beverages', name:'Mirinda (345ml)', emoji:'🥤', price:130, fp:'FP-801', recipe:[['mirinda',1]] },
+  { id:'pepsi_d', cat:'Beverages', name:'Pepsi (345ml)', emoji:'🥤', price:125, fp:'FP-802', recipe:[['pepsi',1]] },
+  { id:'sevenup_d', cat:'Beverages', name:'7up (345ml)', emoji:'🥤', price:125, fp:'FP-803', recipe:[['sevenup',1]] },
+  { id:'water_d', cat:'Beverages', name:'Nestle Water (500ml)', emoji:'💧', price:125, fp:'FP-804', recipe:[['water',1]] },
+  { id:'elaichi_tea', cat:'Beverages', name:'Elaichi Tea', emoji:'🍵', price:180, fp:'FP-805', recipe:[['tea',6],['milk',100],['sugar',15],['cardamom',1]] },
+  { id:'kashmiri_tea', cat:'Beverages', name:'Kashmiri Tea', emoji:'🍵', price:210, fp:'FP-806', recipe:[['tea',6],['milk',150],['sugar',15]] },
+  { id:'simple_tea', cat:'Beverages', name:'Simple Tea', emoji:'🍵', price:160, fp:'FP-807', recipe:[['tea',5],['milk',90],['sugar',12]] },
+  { id:'jam_shirin', cat:'Beverages', name:'Jam-e-Shirin', emoji:'🧃', price:100, fp:'FP-808', recipe:[['jamshirin',40]] },
+  { id:'fresh_lime', cat:'Beverages', name:'Fresh Lime', emoji:'🍋', price:180, fp:'FP-809', recipe:[['lemon',2],['sugar',25]] },
+  { id:'cold_coffee', cat:'Beverages', name:'Cold Coffee', emoji:'🧋', price:280, fp:'FP-810', recipe:[['coffee',8],['milk',150],['sugar',20],['cream',15]] },
+  // Cutlery
+  { id:'disposable_d', cat:'Cutlery', name:'Disposable Spoon/Glass/Fork/Napkin', emoji:'🥢', price:20, fp:'FP-901', recipe:[['disposable',1]] },
 ];
 const dish = id => menu.find(x=>x.id===id);
+const CATS = ['Breakfast','Pakistani Cuisine','Deals','Tea-time Snacks','Roti & Parathas','Dessert','Sides & Add-ons','Beverages','Cutlery'];
 
 const settings = { fpCommission:30, businessName:'Homemade Kitchen Co.' }; // Foodpanda commission % + brand
 
@@ -318,10 +409,10 @@ let state = {
 /* ---- seed a little history so the dashboard isn't empty ---- */
 function seed(){
   const t = Date.now();
-  pushOrder('foodpanda',[['biryani',4],['roll',2]], t-1000*60*180, null, false);
-  pushOrder('walkin',[['karahi',1],['biryani',1]], t-1000*60*120, 'Cash', false);
-  pushOrder('foodpanda',[['burger',3]], t-1000*60*60, null, false);
-  pushOrder('walkin',[['biryani',2],['pulao',1]], t-1000*60*30, 'Card', false);
+  pushOrder('foodpanda',[['chicken_burger',2],['french_fries',2],['pepsi_d',2]], t-1000*60*180, null, false);
+  pushOrder('walkin',[['aloo_paratha',1],['simple_tea',2]], t-1000*60*120, 'Cash', false);
+  pushOrder('foodpanda',[['daal_mash',1],['plain_paratha',2]], t-1000*60*60, null, false);
+  pushOrder('walkin',[['nuggets_snack',1],['mirinda_d',1]], t-1000*60*30, 'Card', false);
   addTxn({kind:'expense',accountId:'cash',categoryId:'c_gas',amount:1800,note:'Cylinder refill',time:t-1000*60*200});
   addTxn({kind:'expense',accountId:'bank',categoryId:'c_salary',amount:25000,note:'Helper — weekly',time:t-1000*60*240});
   addTxn({kind:'expense',accountId:'cash',categoryId:'c_ingredients',amount:14500,note:'Chicken & rice from supplier',time:t-1000*60*150});
@@ -358,11 +449,12 @@ function pushOrder(channel, itemPairs, time, payment, doConsume=true){
 
 /* ---- actions ---- */
 const FP_PRESETS = [
-  [['biryani',10]],
-  [['karahi',3],['biryani',2]],
-  [['biryani',5],['roll',4]],
-  [['burger',6],['roll',3]],
-  [['pulao',4],['biryani',3]],
+  [['chicken_burger',4],['french_fries',3],['pepsi_d',4]],
+  [['aloo_paratha',3],['simple_tea',3]],
+  [['daal_mash',2],['plain_paratha',4],['boiled_rice',1]],
+  [['nuggets_snack',2],['chicken_fries',2],['sevenup_d',2]],
+  [['deal3',5],['cold_coffee',2]],
+  [['sandwich',6],['mirinda_d',3]],
 ];
 let fpIdx = 0;
 function simulateFoodpanda(){
@@ -592,17 +684,25 @@ function viewOrders(){
 }
 
 /* ---------- POS ---------- */
+function dishGroups(){
+  const cats=[...CATS]; menu.forEach(m=>{const c=m.cat||'Other'; if(!cats.includes(c))cats.push(c);});
+  return cats.map(cat=>({cat,items:menu.filter(m=>(m.cat||'Other')===cat)})).filter(g=>g.items.length);
+}
 function viewPOS(){
-  return `<div class="pos">
-    <div class="dishgrid">
-      ${menu.map(m=>{const cost=recipeCost(m);const mg=Math.round((m.price-cost)/m.price*100);return `
-        <button class="dish" onclick="addToCart('${m.id}')">
-          <div class="e">${m.emoji}</div><b>${m.name}</b>
-          <div class="pr">${fmtPKR(m.price)}</div>
-          <div class="mg">cost ${fmtPKR(cost)} · ${mg}% margin</div>
-        </button>`}).join('')}
+  return `<div class="pos" style="align-items:flex-start">
+    <div>
+      ${dishGroups().map(g=>`
+        <div class="sec-title" style="margin:4px 0 10px">${g.cat} <span class="muted" style="font-weight:600">(${g.items.length})</span></div>
+        <div class="dishgrid" style="margin-bottom:18px">
+          ${g.items.map(m=>{const cost=recipeCost(m);const mg=Math.round((m.price-cost)/m.price*100);return `
+            <button class="dish" onclick="addToCart('${m.id}')">
+              <div class="e">${m.emoji}</div><b>${m.name}</b>
+              <div class="pr">${fmtPKR(m.price)}</div>
+              <div class="mg">cost ${fmtPKR(cost)} · ${mg}% margin</div>
+            </button>`}).join('')}
+        </div>`).join('')}
     </div>
-    <div class="cartbox">
+    <div class="cartbox" style="position:sticky;top:8px;max-height:calc(100vh - 150px)">
       <div class="hd">🛒 Current sale</div>
       <div class="cartlist">
         ${state.cart.length? state.cart.map(c=>{const m=dish(c.id);return `
@@ -688,34 +788,38 @@ function viewInventory(){
 }
 
 /* ---------- RECIPES ---------- */
+function recipeCard(m){
+  const cost=recipeCost(m), profit=m.price-cost, mg=m.price?Math.round(profit/m.price*100):0;
+  const fpProfit=m.price*(1-settings.fpCommission/100)-cost;
+  return `<div class="card">
+    <div class="between" style="margin-bottom:6px">
+      <div class="row"><span style="font-size:26px">${m.emoji}</span><div><b style="font-size:16px">${m.name}</b><div class="small muted">Foodpanda code: ${m.fp}</div></div></div>
+      <div style="text-align:right">
+        <button class="btn sm ghost" onclick="openRecipeForm('${m.id}')" title="Edit recipe">✏️ Edit</button>
+        <div style="margin-top:6px"><b style="font-size:18px">${fmtPKR(m.price)}</b> <span class="small muted">sell</span></div>
+      </div>
+    </div>
+    <div style="margin:14px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:12px 0">
+      <div class="small muted" style="margin-bottom:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em">Recipe per plate</div>
+      ${m.recipe.map(([iid,q])=>`<div class="between small" style="padding:3px 0"><span>${ing(iid).emoji} ${ing(iid).name}</span><span class="muted">${fmtQty(q,ing(iid).unit)} · ${fmtPKR(q*ing(iid).cost)}</span></div>`).join('')||'<div class="muted small">No recipe yet</div>'}
+    </div>
+    <div class="grid g3" style="gap:8px;text-align:center">
+      <div><div class="small muted">Food cost</div><b>${fmtPKR(cost)}</b></div>
+      <div><div class="small muted">Walk-in profit</div><b style="color:var(--green)">${fmtPKR(profit)}<span class="small muted"> ${mg}%</span></b></div>
+      <div><div class="small muted">Foodpanda profit</div><b style="color:var(--accent-soft)">${fmtPKR(fpProfit)}<span class="small muted"> ${m.price?Math.round(fpProfit/m.price*100):0}%</span></b></div>
+    </div>
+  </div>`;
+}
 function viewRecipes(){
   return `
   <div class="between" style="margin-bottom:16px">
     <div class="muted small">${menu.length} dishes · recipes drive auto-deduction &amp; food cost</div>
     <button class="btn primary" onclick="openRecipeForm()">＋ Add dish / recipe</button>
   </div>
-  <div class="grid g2">
-    ${menu.map(m=>{const cost=recipeCost(m);const profit=m.price-cost;const mg=Math.round(profit/m.price*100);
-      const fpNet=m.price*(1-settings.fpCommission/100);const fpProfit=fpNet-cost;
-      return `<div class="card">
-        <div class="between" style="margin-bottom:6px">
-          <div class="row"><span style="font-size:26px">${m.emoji}</span><div><b style="font-size:16px">${m.name}</b><div class="small muted">Foodpanda code: ${m.fp}</div></div></div>
-          <div style="text-align:right">
-            <button class="btn sm ghost" onclick="openRecipeForm('${m.id}')" title="Edit recipe">✏️ Edit</button>
-            <div style="margin-top:6px"><b style="font-size:18px">${fmtPKR(m.price)}</b> <span class="small muted">sell</span></div>
-          </div>
-        </div>
-        <div style="margin:14px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:12px 0">
-          <div class="small muted" style="margin-bottom:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em">Recipe per plate</div>
-          ${m.recipe.map(([iid,q])=>`<div class="between small" style="padding:3px 0"><span>${ing(iid).emoji} ${ing(iid).name}</span><span class="muted">${fmtQty(q,ing(iid).unit)} · ${fmtPKR(q*ing(iid).cost)}</span></div>`).join('')}
-        </div>
-        <div class="grid g3" style="gap:8px;text-align:center">
-          <div><div class="small muted">Food cost</div><b>${fmtPKR(cost)}</b></div>
-          <div><div class="small muted">Walk-in profit</div><b style="color:var(--green)">${fmtPKR(profit)}<span class="small muted"> ${mg}%</span></b></div>
-          <div><div class="small muted">Foodpanda profit</div><b style="color:var(--accent-soft)">${fmtPKR(fpProfit)}<span class="small muted"> ${Math.round(fpProfit/m.price*100)}%</span></b></div>
-        </div>
-      </div>`}).join('')}
-  </div>`;
+  ${dishGroups().map(g=>`
+    <div class="sec-title">${g.cat} <span class="muted" style="font-weight:600">(${g.items.length})</span></div>
+    <div class="grid g2" style="margin-bottom:8px">${g.items.map(recipeCard).join('')}</div>
+  `).join('')}`;
 }
 
 /* ---------- EXPENSES & ACCOUNTS (finance module) ---------- */
@@ -869,8 +973,8 @@ function saveAdjust(id,eu){
 let draftRecipe=null;
 function openRecipeForm(id){
   const m=id?dish(id):null;
-  draftRecipe = m ? {id,name:m.name,emoji:m.emoji,price:m.price,fp:m.fp,lines:m.recipe.map(([iid,q])=>({iid,q}))}
-                  : {id:null,name:'',emoji:'🍽️',price:'',fp:'',lines:[{iid:ingredients[0].id,q:''}]};
+  draftRecipe = m ? {id,name:m.name,emoji:m.emoji,price:m.price,fp:m.fp,cat:m.cat||'Pakistani Cuisine',lines:m.recipe.map(([iid,q])=>({iid,q}))}
+                  : {id:null,name:'',emoji:'🍽️',price:'',fp:'',cat:'Pakistani Cuisine',lines:[{iid:ingredients[0].id,q:''}]};
   renderRecipeForm();
 }
 function captureRecipe(){
@@ -879,6 +983,7 @@ function captureRecipe(){
   draftRecipe.emoji=document.getElementById('rcEmoji').value;
   draftRecipe.price=document.getElementById('rcPrice').value;
   draftRecipe.fp=document.getElementById('rcFp').value;
+  if(document.getElementById('rcCat')) draftRecipe.cat=document.getElementById('rcCat').value;
   draftRecipe.lines=[...document.querySelectorAll('.rl')].map(r=>({iid:r.querySelector('.rl-ing').value,q:r.querySelector('.rl-qty').value}));
 }
 function recipeAddLine(){ captureRecipe(); draftRecipe.lines.push({iid:ingredients[0].id,q:''}); renderRecipeForm(); }
@@ -915,7 +1020,8 @@ function renderRecipeForm(){
         <div class="field" style="grid-column:span 2"><label>Dish name</label><input class="inp" id="rcName" value="${d.name}" placeholder="e.g. Chicken Biryani"></div>
         <div class="field"><label>Icon</label><input class="inp" id="rcEmoji" value="${d.emoji}" maxlength="2"></div>
         <div class="field"><label>Sell price (Rs)</label><input class="inp" id="rcPrice" type="number" value="${d.price}" placeholder="450" oninput="recipeLiveCost()"></div>
-        <div class="field" style="grid-column:span 2"><label>Foodpanda product code</label><input class="inp" id="rcFp" value="${d.fp}" placeholder="e.g. FP-BIR-01"></div>
+        <div class="field"><label>Category</label><select class="inp" id="rcCat">${[...new Set([...CATS, d.cat])].map(ct=>`<option ${ct===d.cat?'selected':''}>${ct}</option>`).join('')}</select></div>
+        <div class="field"><label>Foodpanda code</label><input class="inp" id="rcFp" value="${d.fp}" placeholder="e.g. FP-101"></div>
       </div>
       <div class="sec-title" style="margin:8px 0 10px">Recipe — ingredients used per plate</div>
       <div id="rcLines">${d.lines.map((ln,idx)=>recipeLineHtml(ln,idx)).join('')||'<p class="muted small">No ingredients yet — add one below.</p>'}</div>
@@ -942,8 +1048,8 @@ function saveRecipe(){
   if(price<=0){ toast('Price required','Enter a sell price.','red'); return; }
   if(!lines.length){ toast('Recipe empty','Add at least one ingredient with a quantity.','red'); return; }
   const recipe=lines.map(l=>[l.iid,l.q]);
-  if(d.id){ Object.assign(dish(d.id),{name,emoji:d.emoji||'🍽️',price,fp:d.fp.trim(),recipe}); toast('✅ Recipe updated',name,'green'); }
-  else { menu.push({id:'dish'+(state.seq++),name,emoji:d.emoji||'🍽️',price,fp:d.fp.trim()||('FP-'+state.seq),recipe}); toast('✅ Dish added',`${d.emoji} ${name} · ${lines.length} ingredients`,'green'); }
+  if(d.id){ Object.assign(dish(d.id),{name,emoji:d.emoji||'🍽️',price,fp:d.fp.trim(),cat:d.cat||'Other',recipe}); toast('✅ Recipe updated',name,'green'); }
+  else { menu.push({id:'dish'+(state.seq++),cat:d.cat||'Other',name,emoji:d.emoji||'🍽️',price,fp:d.fp.trim()||('FP-'+state.seq),recipe}); toast('✅ Dish added',`${d.emoji} ${name} · ${lines.length} ingredients`,'green'); }
   closeModal(); render();
 }
 function deleteRecipe(id){
